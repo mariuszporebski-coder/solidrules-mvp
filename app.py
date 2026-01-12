@@ -105,7 +105,31 @@ st.markdown("""
 
     </style>
 """, unsafe_allow_html=True)
+# --- ZABEZPIECZENIE HASŁEM ---
+import hmac
 
+def check_password():
+    """Zwraca `True` jeśli użytkownik wpisał poprawne hasło."""
+    def password_entered():
+        if hmac.compare_digest(st.session_state["password"], st.secrets["APP_PASSWORD"]):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Nie przechowujemy hasła
+        else:
+            st.session_state["password_correct"] = False
+
+    if st.session_state.get("password_correct", False):
+        return True
+
+    st.markdown("### 🔒 Strefa Inżynierska Chroniona")
+    st.text_input("Podaj kod dostępu:", type="password", on_change=password_entered, key="password")
+    
+    if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+        st.error("❌ Błędny kod dostępu.")
+    return False
+
+# BLOKADA APLIKACJI
+if not check_password():
+    st.stop()
 # --- TŁUMACZENIA (SUPER-PROMPT "CRITIC & TRIZ") ---
 # ... (reszta kodu bez zmian) ...
 
