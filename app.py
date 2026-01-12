@@ -38,7 +38,7 @@ translations = {
         "report_header": "### 💡 Raport Inżynierski (Multimodalny)",
         "disclaimer": "⚠️ **Nota prawna:** Zweryfikuj dane z oryginałem.",
         "status_ok": "✅ Dokument przetworzony! Widzę tekst ({engine}) oraz {img_count} stron jako obrazy.",
-        "system_prompt": """J"system_prompt": """Jesteś Głównym Technologiem.
+        "system_prompt": ""Jesteś Głównym Technologiem.
         
         DANE WEJŚCIOWE: Otrzymałeś tekst z dokumentu ORAZ zrzuty ekranu stron (obrazy).
         
