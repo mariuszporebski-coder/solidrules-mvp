@@ -19,7 +19,95 @@ except:
     st.error("Brak kluczy API! Ustaw je w Streamlit Cloud Secrets.")
     st.stop()
 
-st.set_page_config(page_title="SolidRules AI: Expert System", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="SolidRules AI", page_icon="🛡️", layout="wide")
+
+# --- CSS HACK: DOPASOWANIE DO STRONY CREATIVE CAD STUDIO ---
+st.markdown("""
+    <style>
+        /* Import czcionki Inter (takiej jak na stronie) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Ukrycie górnego paska Streamlit (tego kolorowego i hamburgera) dla czystego wyglądu */
+        header {visibility: hidden;}
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        
+        /* Dopasowanie tła głównego kontenera */
+        .stApp {
+            background-color: #050505;
+        }
+
+        /* Stylizacja Paska Bocznego */
+        section[data-testid="stSidebar"] {
+            background-color: #0c0c0c;
+            border-right: 1px solid #1e1e1e;
+        }
+
+        /* Pola tekstowe (Inputy) - Ciemne, cienka ramka */
+        .stTextInput input, .stTextArea textarea {
+            background-color: #111111 !important;
+            color: #e2e8f0 !important;
+            border: 1px solid #333 !important;
+            border-radius: 8px !important;
+        }
+        .stTextInput input:focus, .stTextArea textarea:focus {
+            border-color: #6366f1 !important; /* Indigo przy aktywności */
+            box-shadow: 0 0 0 1px #6366f1 !important;
+        }
+
+        /* Przyciski (Buttons) - Styl Indigo */
+        div.stButton > button {
+            background-color: #1e1e2e;
+            color: white;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+        }
+        div.stButton > button:hover {
+            background-color: #6366f1; /* Indigo Hover */
+            border-color: #6366f1;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        
+        /* Przyciski Primary (Te główne "Generuj") */
+        div.stButton > button[kind="primary"] {
+            background: linear-gradient(to right, #4f46e5, #6366f1);
+            border: none;
+        }
+
+        /* Nagłówki i Teksty */
+        h1, h2, h3 {
+            color: #f8fafc !important; /* Prawie biały */
+            font-weight: 600 !important;
+            letter-spacing: -0.02em !important;
+        }
+        p, li, label {
+            color: #94a3b8 !important; /* Slate-400 */
+        }
+        
+        /* Komunikaty (Success/Warning) - Stonowane kolory */
+        .stAlert {
+            background-color: #0c0c0c;
+            border: 1px solid #333;
+            color: #cbd5e1;
+        }
+        
+        /* Spinner */
+        .stSpinner > div {
+            border-top-color: #6366f1 !important;
+        }
+
+    </style>
+""", unsafe_allow_html=True)
+
+# --- TŁUMACZENIA (SUPER-PROMPT "CRITIC & TRIZ") ---
+# ... (reszta kodu bez zmian) ...
 
 # --- TŁUMACZENIA (SUPER-PROMPT "CRITIC & TRIZ") ---
 translations = {
