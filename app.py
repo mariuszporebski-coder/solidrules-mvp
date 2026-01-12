@@ -1,19 +1,13 @@
 import streamlit as st
-import tempfile
-import os
-import nest_asyncio
+import pdfplumber
 from openai import OpenAI
-from llama_parse import LlamaParse
 
-# Wymagane dla działania LlamaParse w środowisku Streamlit
-nest_asyncio.apply()
-
-# --- KONFIGURACJA KLUCZY ---
+# --- KONFIGURACJA ---
+# Teraz potrzebujemy TYLKO klucza OpenAI. LlamaCloud omijamy.
 try:
     OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-    LLAMA_CLOUD_API_KEY = st.secrets["LLAMA_CLOUD_API_KEY"]
 except:
-    st.error("Brak kluczy API! Ustaw OPENAI_API_KEY oraz LLAMA_CLOUD_API_KEY w Streamlit Secrets.")
+    st.error("Brak klucza OpenAI! Ustaw go w Streamlit Cloud Secrets.")
     st.stop()
 
 st.set_page_config(
@@ -22,186 +16,160 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- SŁOWNIK TŁUMACZEŃ ---
+# --- TŁUMACZENIA ---
 translations = {
     "PL": {
-        "title": "SolidRules: Asystent Inżyniera + Analiza PDF",
-        "sidebar_title": "🛡️ SolidRules v0.3 (RAG)",
+        "title": "SolidRules: Asystent Inżyniera (Silnik: PDFPlumber)",
+        "sidebar_title": "🛡️ SolidRules v0.4 (Local)",
         "instruction_header": "**Instrukcja:**",
-        "instr_1": "1. (Opcja) Wgraj plik PDF (Norma/DTR).",
+        "instr_1": "1. Wgraj plik PDF (Norma/DTR).",
         "instr_2": "2. Opisz problem.",
         "instr_3": "3. Kliknij Generuj.",
         "footer": "© 2026 SolidRules Engineering",
         "label_problem": "Twój problem / Pytanie do dokumentacji:",
-        "placeholder": "Np. Jaka jest tolerancja dla wałka fi 50 wg wgranej tabeli? albo: Jak to naprawić używając TRIZ?",
+        "placeholder": "Np. Jaka jest kategoria zbiornika dla PS=45bar i V=150L?",
         "button": "🚀 Analizuj i Generuj",
         "warning_short": "⚠️ Opisz problem dokładniej.",
-        "spinner_pdf": "📂 Skanuję dokumentację (LlamaParse)... to może chwilę potrwać...",
+        "spinner_pdf": "📂 Skanuję plik lokalnie (PDFPlumber)...",
         "spinner_ai": "🧠 Analizuję dane i szukam rozwiązania...",
         "report_header": "### 💡 Raport Inżynierski",
-        "disclaimer": "⚠️ **Nota prawna:** AI może popełniać błędy. Zweryfikuj dane z oryginałem dokumentu.",
-        "upload_label": "📂 Wgraj dokumentację (PDF, max 10MB)",
-        "file_success": "✅ Plik wczytany poprawnie!",
+        "disclaimer": "⚠️ **Nota prawna:** Zweryfikuj dane z oryginałem. AI może popełniać błędy.",
+        "upload_label": "📂 Wgraj dokumentację (PDF)",
+        "file_success": "✅ Plik wczytany (Stron: {pages})",
         "system_prompt_base": """Jesteś Głównym Technologiem. 
         ZASADY:
-        1. Jeśli użytkownik wgrał plik PDF, twoim PRIORYTETEM jest odpowiedź na podstawie tego pliku.
-        2. Cytuj konkretne wartości z tabel (jeśli są).
-        3. Jeśli pytania są ogólne, używaj metodyki TRIZ.
+        1. Odpowiadaj GŁÓWNIE na podstawie wgranego tekstu PDF.
+        2. Jeśli w tekście są tabele, postaraj się odczytać z nich wartości.
+        3. Jeśli nie masz pewności, napisz to wprost.
         4. Bądź konkretny i techniczny.
         5. Odpowiadaj w języku POLSKIM."""
     },
     "EN": {
-        "title": "SolidRules: Engineering Assistant + PDF Analysis",
-        "sidebar_title": "🛡️ SolidRules v0.3 (RAG)",
+        "title": "SolidRules: Engineering Assistant (Engine: PDFPlumber)",
+        "sidebar_title": "🛡️ SolidRules v0.4 (Local)",
         "instruction_header": "**Instructions:**",
-        "instr_1": "1. (Optional) Upload PDF (Standard/Manual).",
-        "instr_2": "2. Describe the problem.",
+        "instr_1": "1. Upload PDF.",
+        "instr_2": "2. Describe problem.",
         "instr_3": "3. Click Generate.",
         "footer": "© 2026 SolidRules Engineering",
-        "label_problem": "Your problem / Question about the document:",
-        "placeholder": "E.g. What is the tolerance for 50mm shaft according to the table? or: How to fix this using TRIZ?",
+        "label_problem": "Your problem / Question:",
+        "placeholder": "E.g. What is the category for PS=45bar and V=150L?",
         "button": "🚀 Analyze & Generate",
         "warning_short": "⚠️ Please describe the problem.",
-        "spinner_pdf": "📂 Scanning document (LlamaParse)... please wait...",
-        "spinner_ai": "🧠 Analyzing data and generating solution...",
+        "spinner_pdf": "📂 Scanning file locally...",
+        "spinner_ai": "🧠 Analyzing data...",
         "report_header": "### 💡 Engineering Report",
-        "disclaimer": "⚠️ **Disclaimer:** AI can make mistakes. Verify data with the original document.",
-        "upload_label": "📂 Upload documentation (PDF, max 10MB)",
-        "file_success": "✅ File loaded successfully!",
+        "disclaimer": "⚠️ **Disclaimer:** Verify data with original document.",
+        "upload_label": "📂 Upload documentation (PDF)",
+        "file_success": "✅ File loaded (Pages: {pages})",
         "system_prompt_base": """You are a Chief Technology Officer.
         RULES:
-        1. If the user uploaded a PDF, your PRIORITY is to answer based on that file.
-        2. Cite specific values from tables (if present).
-        3. If questions are general, use TRIZ methodology.
-        4. Be concrete and technical.
-        5. Answer in ENGLISH."""
+        1. Answer MAINLY based on the uploaded PDF text.
+        2. Try to extract values from tables if present.
+        3. Be concrete and technical.
+        4. Answer in ENGLISH."""
     }
 }
 
-# --- FUNKCJA PARSUJĄCA PDF (LlamaParse - Wersja Wzmocniona) ---
+# --- FUNKCJA PARSUJĄCA (PDFPlumber - Lokalna) ---
 @st.cache_data(show_spinner=False)
-def parse_pdf_with_llama(file_bytes, file_name):
+def parse_pdf_local(file_bytes):
     try:
-        # Tworzymy plik tymczasowy
+        # PDFPlumber potrafi czytać bajty bezpośrednio, ale dla bezpieczeństwa zapiszemy plik
+        import tempfile
+        import os
+        
+        text_content = ""
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
             tmp_file.write(file_bytes)
             tmp_path = tmp_file.name
-
-        # Inicjalizacja parsera z wymuszonym trybem GPT-4o (lepszy OCR)
-        parser = LlamaParse(
-            api_key=LLAMA_CLOUD_API_KEY,
-            result_type="markdown",
-            premium_mode=True,  # Wymusza lepszy OCR (darmowe w limicie 1000 stron)
-            language="pl",      # Podpowiedź dla OCR, że to polski tekst
-            verbose=True
-        )
-
-        # Parsowanie
-        documents = parser.load_data(tmp_path)
+            
+        with pdfplumber.open(tmp_path) as pdf:
+            for page in pdf.pages:
+                # Extract text (good for paragraphs)
+                text = page.extract_text() or ""
+                # Extract tables (experimental, adds raw table data)
+                tables = page.extract_tables()
+                
+                text_content += f"\n--- Page {page.page_number} ---\n{text}\n"
+                
+                if tables:
+                    text_content += "\n[TABELA ZNALEZIONA NA STRONIE]:\n"
+                    for table in tables:
+                        for row in table:
+                            # Czyścimy None i łączymy wiersze
+                            clean_row = [str(cell) if cell is not None else "" for cell in row]
+                            text_content += " | ".join(clean_row) + "\n"
         
-        # Sprzątanie
         os.remove(tmp_path)
+        return text_content
         
-        # Weryfikacja czy coś wróciło
-        if not documents:
-            return "Error: LlamaParse zwróciła pustą listę. Sprawdź czy plik nie jest uszkodzony lub czy klucz API jest poprawny."
-            
-        full_text = "\n\n".join([doc.text for doc in documents])
-        
-        if len(full_text) < 10:
-            return "Error: Odczytano mniej niż 10 znaków. Prawdopodobnie skan jest nieczytelny."
-            
-        return full_text
-    
     except Exception as e:
-        return f"Error parsing PDF: {str(e)}"
+        return f"Error: {str(e)}"
 
 # --- PASEK BOCZNY ---
 with st.sidebar:
     lang = st.radio("Language / Język:", ["PL", "EN"], horizontal=True)
     t = translations[lang]
-    
     st.header(t["sidebar_title"])
     st.markdown("---")
-    st.markdown(t["instruction_header"])
-    st.markdown(t["instr_1"])
-    st.markdown(t["instr_2"])
-    st.markdown(t["instr_3"])
-    st.markdown("---")
-    st.info("Engine: GPT-4o-mini + LlamaParse")
+    st.info("Engine: GPT-4o-mini + PDFPlumber")
     st.markdown("---")
     st.caption(t["footer"])
 
 # --- GŁÓWNA STRONA ---
-col1, col2 = st.columns([1, 5])
-with col1:
-    st.markdown("# 🛡️") 
-with col2:
-    st.title(t["title"])
-
+st.title(t["title"])
 st.markdown("---")
 
-# 1. SEKCYJA WGRYWANIA PLIKU
+# 1. WGRYWANIE
 uploaded_file = st.file_uploader(t["upload_label"], type=["pdf"])
-pdf_content = ""
-
-# ... (wcześniejszy kod funkcji parse) ...
+pdf_text = ""
 
 if uploaded_file is not None:
     with st.spinner(t["spinner_pdf"]):
         bytes_data = uploaded_file.getvalue()
-        parsed_text = parse_pdf_with_llama(bytes_data, uploaded_file.name)
+        extracted_text = parse_pdf_local(bytes_data)
         
-        if "Error" in parsed_text:
-            st.error(parsed_text)
+        if "Error" in extracted_text:
+            st.error(extracted_text)
         else:
-            pdf_content = parsed_text
-            st.success(t["file_success"])
+            pdf_text = extracted_text
+            # Liczymy strony "na piechotę" po znacznikach
+            page_count = extracted_text.count("--- Page")
+            st.success(t["file_success"].format(pages=page_count))
             
-            # --- NOWOŚĆ: DEBUGGER ---
-            with st.expander("🕵️ DEBUG: Zobacz co widzi AI (Kliknij tutaj)"):
-                st.info(f"Pobrano znaków: {len(pdf_content)}")
-                if len(pdf_content) < 100:
-                    st.error("⚠️ UWAGA: Tekst jest podejrzanie krótki! LlamaParse mogła nie zadziałać.")
-                st.markdown("**Początek dokumentu:**")
-                st.text(pdf_content[:2000]) # Pokaż pierwsze 2000 znaków
-            # ------------------------
+            with st.expander("🕵️ DEBUG: Zobacz co widzi AI"):
+                st.text(pdf_text[:2000])
 
-# 2. POLE TEKSTOWE
-st.markdown("---")
+# 2. PYTANIE
 problem = st.text_area(t["label_problem"], height=100, placeholder=t["placeholder"])
 generate_button = st.button(t["button"], type="primary", use_container_width=True)
 
-# 3. LOGIKA AI
+# 3. GENEROWANIE
 if generate_button:
-    if not problem or len(problem.strip()) < 3:
+    if not problem:
         st.warning(t["warning_short"])
     else:
         with st.spinner(t["spinner_ai"]):
-            try:
-                client = OpenAI(api_key=OPENAI_API_KEY)
-                
-                # Budujemy kontekst
-                system_instruction = t["system_prompt_base"]
-                
-                # Jeśli jest PDF, doklejamy go do wiadomości systemowej
-                if pdf_content:
-                    system_instruction += f"\n\n--- ZAWARTOŚĆ WGRANEGO DOKUMENTU PDF ---\n{pdf_content}\n--- KONIEC DOKUMENTU ---\n\nOdpowiadaj WYŁĄCZNIE na podstawie powyższego dokumentu, jeśli zawiera odpowiedź."
+            client = OpenAI(api_key=OPENAI_API_KEY)
+            
+            # Skracamy tekst jeśli jest gigantyczny (limit tokenów)
+            # GPT-4o-mini ma duże okno (128k), ale bezpieczniej nie przesadzać
+            final_context = pdf_text[:100000] 
+            
+            prompt = t["system_prompt_base"]
+            if final_context:
+                prompt += f"\n\n--- DOKUMENTACJA (PDF) ---\n{final_context}\n--- KONIEC ---\n"
 
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": system_instruction},
-                        {"role": "user", "content": problem}
-                    ],
-                    temperature=0.5 # Mniejsza temperatura = bardziej precyzyjne czytanie tabel
-                )
-                
-                answer = response.choices[0].message.content
-                
-                st.markdown(t["report_header"])
-                st.markdown(answer)
-                st.warning(t["disclaimer"])
-                
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": problem}
+                ],
+                temperature=0.3 # Niski, żeby był precyzyjny
+            )
+            
+            st.markdown(t["report_header"])
+            st.markdown(response.choices[0].message.content)
+            st.warning(t["disclaimer"])
