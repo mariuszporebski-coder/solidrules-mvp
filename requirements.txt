@@ -1,6 +1,8 @@
 streamlit
 openai
-llama-index
-llama-parse
-python-dotenv
+llama-index>=0.10.0
+llama-parse>=0.4.0
+pdfplumber
 nest_asyncio
+python-dotenv
+pymupdf
