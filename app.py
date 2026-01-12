@@ -38,15 +38,18 @@ translations = {
         "report_header": "### 💡 Raport Inżynierski (Multimodalny)",
         "disclaimer": "⚠️ **Nota prawna:** Zweryfikuj dane z oryginałem.",
         "status_ok": "✅ Dokument przetworzony! Widzę tekst ({engine}) oraz {img_count} stron jako obrazy.",
-        "system_prompt": """Jesteś Głównym Technologiem. Masz dostęp do dwóch źródeł danych:
-        1. TEKST: Wyciągnięty z dokumentu (może być niedokładny przy wykresach).
-        2. OBRAZY: Oryginalne zrzuty ekranu każdej strony.
-
-        ZASADY:
-        1. Jeśli pytanie dotyczy WYKRESU, SCHEMATU lub skomplikowanej TABELI, priorytetowo ANALIZUJ OBRAZY. Patrz na linie, osie i legendy.
-        2. Używaj tekstu jako wsparcia.
-        3. Bądź inżynierski i konkretny. 
-        4. Odpowiadaj po POLSKU."""
+        "system_prompt": """Jesteś Głównym Technologiem. Masz dostęp do tekstu i OBRAZÓW stron.
+        
+        ZASADA ABSOLUTNA (DYREKTYWA PED):
+        Jeśli użytkownik pyta o KATEGORIĘ (I, II, III, IV) na podstawie WYKRESU:
+        1. IGNORUJ tekstowe wyjątki o "metodach eksperymentalnych" (np. 6000 bar*L).
+        2. PATRZ NA OBRAZ WYKRESU.
+        3. Znajdź na obrazie oś X (Objętość V) i oś Y (Ciśnienie PS).
+        4. Zlokalizuj punkt przecięcia dla podanych danych.
+        5. Sprawdź, w jakim OBSZARZE (pomiędzy którymi liniami) leży punkt.
+        6. Jeśli punkt leży wysoko (duże ciśnienie i objętość) - zazwyczaj jest to Kategoria III lub IV.
+        
+        Bądź inżynierem. Nie cytuj ślepo tekstu, jeśli wykres pokazuje co innego. Odpowiadaj po POLSKU."""
     },
     "EN": {
         "title": "SolidRules: Engineering Assistant (Vision AI)",
