@@ -78,34 +78,39 @@ translations = {
     }
 }
 
-# --- FUNKCJA PARSUJĄCA PDF (LlamaParse) ---
+# --- FUNKCJA PARSUJĄCA PDF (LlamaParse - Wersja Wzmocniona) ---
 @st.cache_data(show_spinner=False)
 def parse_pdf_with_llama(file_bytes, file_name):
-    """
-    Ta funkcja wysyła plik do LlamaCloud i odbiera czysty tekst (Markdown).
-    Używamy cache, żeby nie mielić tego samego pliku dwa razy.
-    """
     try:
-        # Tworzymy plik tymczasowy, bo LlamaParse wymaga ścieżki do pliku
+        # Tworzymy plik tymczasowy
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
             tmp_file.write(file_bytes)
             tmp_path = tmp_file.name
 
-        # Inicjalizacja parsera
+        # Inicjalizacja parsera z wymuszonym trybem GPT-4o (lepszy OCR)
         parser = LlamaParse(
             api_key=LLAMA_CLOUD_API_KEY,
-            result_type="markdown",  # Markdown najlepiej zachowuje tabele
+            result_type="markdown",
+            premium_mode=True,  # Wymusza lepszy OCR (darmowe w limicie 1000 stron)
+            language="pl",      # Podpowiedź dla OCR, że to polski tekst
             verbose=True
         )
 
         # Parsowanie
         documents = parser.load_data(tmp_path)
         
-        # Sprzątanie (usuwamy plik tymczasowy)
+        # Sprzątanie
         os.remove(tmp_path)
         
-        # Złączamy wszystkie strony w jeden tekst
+        # Weryfikacja czy coś wróciło
+        if not documents:
+            return "Error: LlamaParse zwróciła pustą listę. Sprawdź czy plik nie jest uszkodzony lub czy klucz API jest poprawny."
+            
         full_text = "\n\n".join([doc.text for doc in documents])
+        
+        if len(full_text) < 10:
+            return "Error: Odczytano mniej niż 10 znaków. Prawdopodobnie skan jest nieczytelny."
+            
         return full_text
     
     except Exception as e:
