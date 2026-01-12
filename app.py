@@ -2,100 +2,99 @@ import streamlit as st
 from openai import OpenAI
 
 # --- KONFIGURACJA ---
-# Wklej tutaj swój klucz od OpenAI (zaczyna się od sk-...)
-# --- KONFIGURACJA ---
-# Teraz klucz pobieramy z bezpiecznych sekretów chmury, a nie z pliku!
+# Pobieranie klucza z sekretów chmury
 try:
     OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 except:
     st.error("Brak klucza API! Ustaw go w Streamlit Cloud Secrets.")
     st.stop()
+
 # Konfiguracja strony
 st.set_page_config(
-    page_title="SolidRules: Asystent Inżyniera (TRIZ)",
-    page_icon="🔧",
+    page_title="SolidRules AI",
+    page_icon="🛡️",
     layout="wide"
 )
 
-# Tytuł aplikacji
-st.title("🔧 SolidRules: Asystent Inżyniera (TRIZ)")
+# --- PASEK BOCZNY (SIDEBAR) ---
+with st.sidebar:
+    st.header("🛡️ SolidRules v0.1")
+    st.markdown("---")
+    st.markdown("**Instrukcja:**")
+    st.markdown("1. Opisz problem techniczny.")
+    st.markdown("2. Określ ograniczenia (np. brak oleju).")
+    st.markdown("3. Kliknij Generuj.")
+    st.markdown("---")
+    
+    # Opcja dla Ciebie: Wybór "Trybu" (na przyszłość)
+    mode = st.radio("Tryb pracy:", ["Kreatywny (TRIZ)", "Zgodność z Normą (Wkrótce)"])
+    
+    st.info("System używa modelu GPT-4o-mini.")
+    st.markdown("---")
+    st.caption("© 2026 SolidRules Engineering")
+
+# --- GŁÓWNA STRONA ---
+col1, col2 = st.columns([1, 5])
+with col1:
+    # Tu możesz wstawić emoji lub link do logo, jeśli masz URL
+    st.markdown("# 🛡️") 
+with col2:
+    st.title("SolidRules: Inżynierski Asystent TRIZ")
+
 st.markdown("---")
 
-# Opis aplikacji
-st.markdown("""
-### Witaj w asystencie TRIZ!
-Wpisz swój problem inżynierski poniżej, a otrzymasz kreatywne rozwiązania oparte o **40 Zasad Wynalazczych TRIZ**.
-""")
-
-# Pole tekstowe do wprowadzenia problemu
+# Pole tekstowe
 problem = st.text_area(
-    "Opisz swój problem inżynierski:",
+    "Opisz problem inżynierski lub sprzeczność technologiczną:",
     height=150,
-    placeholder="Np. Jak zmniejszyć zużycie energii w procesie produkcyjnym? Jak zwiększyć wytrzymałość materiału przy zachowaniu jego lekkości?"
+    placeholder="Np. Muszę zwiększyć sztywność blachy, ale nie mogę zwiększyć jej masy. Spawanie ciągłe powoduje deformacje."
 )
 
-# Przycisk do generowania rozwiązań
 generate_button = st.button("🚀 Generuj Rozwiązania", type="primary", use_container_width=True)
 
-# Funkcja generująca rozwiązania TRIZ przy użyciu OpenAI
+# Funkcja (ta sama co wcześniej)
 def generate_triz_solutions(problem_text):
-    if not problem_text or len(problem_text.strip()) < 10:
+    if not problem_text or len(problem_text.strip()) < 5:
         return None
     
-    if not OPENAI_API_KEY or "TU_WKLEJ" in OPENAI_API_KEY:
-        return "ERROR: Klucz API nie został ustawiony."
-    
     try:
-        # Konfiguracja Klienta OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
         
-        # System Prompt - Instrukcja dla Inżyniera
-        system_prompt = """Jesteś Głównym Technologiem w zakładzie przemysłu ciężkiego. 
+        system_prompt = """Jesteś Głównym Technologiem w zakładzie przemysłu ciężkiego (Heavy Industry). 
         Twoim celem jest rozwiązywanie problemów produkcyjnych przy użyciu metodyki TRIZ.
 
         ZASADY:
         1. Bądź PRAGMATYCZNY. Unikaj rozwiązań sci-fi.
-        2. Skup się na procesie technologicznym (spawanie, gięcie, montaż, obróbka).
-        3. Odpowiedź ma być konkretna: Konkretna Zasada TRIZ + Jak to zastosować w warsztacie.
-        4. Formatuj odpowiedź używając Markdown (pogrubienia, listy)."""
+        2. Skup się na procesie technologicznym (spawanie, obróbka, montaż, materiałoznawstwo).
+        3. STRUKTURA ODPOWIEDZI:
+           - Podaj 3 konkretne koncepcje.
+           - Dla każdej podaj: Numer Zasady TRIZ + Opis Techniczny + Ryzyka.
+        4. Używaj języka technicznego, zrozumiałego dla inżyniera."""
         
-        # Zapytanie do modelu
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Najlepszy stosunek ceny do jakości
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Problem inżynierski: {problem_text}. Zaproponuj 3 rozwiązania TRIZ."}
+                {"role": "user", "content": f"Problem: {problem_text}"}
             ],
-            temperature=0.7 # Kreatywność (0 = robot, 1 = artysta)
+            temperature=0.7
         )
-        
-        # Zwróć tekst odpowiedzi
         return response.choices[0].message.content
         
     except Exception as e:
-        return f"BŁĄD: Nie udało się wygenerować odpowiedzi. Szczegóły: {str(e)}"
+        return f"BŁĄD: {str(e)}"
 
-# Główna logika aplikacji
+# Logika wyświetlania
 if generate_button:
-    if not problem or len(problem.strip()) < 10:
-        st.warning("⚠️ Proszę wpisać problem inżynierski (minimum 10 znaków).")
+    if not problem or len(problem.strip()) < 5:
+        st.warning("⚠️ Opisz problem dokładniej.")
     else:
-        with st.spinner("🔍 Analizuję problem (Silnik: OpenAI GPT-4o-mini)..."):
+        with st.spinner("⚙️ Analizuję parametry i dobieram zasady TRIZ..."):
             response = generate_triz_solutions(problem)
         
         if response:
-            st.markdown("---")
-            st.subheader("💡 Zaproponowane rozwiązania:")
-            st.markdown("")
+            st.markdown("### 💡 Raport Rozwiązań")
+            st.markdown(response)
             
-            if response.startswith("ERROR:") or response.startswith("BŁĄD"):
-                st.error(response)
-            else:
-                st.markdown(response)
-            
-            st.markdown("")
-            st.caption("💡 *Powered by OpenAI GPT-4o-mini*")
-
-# Stopka
-st.markdown("---")
-st.caption("🔧 SolidRules MVP")
+            # Disclaimer prawny (Ważne w B2B!)
+            st.warning("⚠️ **Nota prawna:** To narzędzie wspomagające (AI). Każde rozwiązanie musi zostać zweryfikowane obliczeniowo przez uprawnionego inżyniera przed wdrożeniem.")
