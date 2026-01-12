@@ -3,7 +3,7 @@ import tempfile
 import os
 import nest_asyncio
 import pdfplumber
-import fitz  # To jest PyMuPDF - nasze "oczy"
+import fitz  # PyMuPDF
 import base64
 from openai import OpenAI
 from llama_parse import LlamaParse
@@ -19,112 +19,156 @@ except:
     st.error("Brak kluczy API! Ustaw je w Streamlit Cloud Secrets.")
     st.stop()
 
-st.set_page_config(page_title="SolidRules AI Vision", page_icon="👁️", layout="wide")
+st.set_page_config(page_title="SolidRules AI: Expert System", page_icon="🛡️", layout="wide")
 
-# --- TŁUMACZENIA ---
+# --- TŁUMACZENIA (SUPER-PROMPT "CRITIC & TRIZ") ---
 translations = {
     "PL": {
-        "title": "SolidRules: Asystent Inżyniera (Vision AI)",
-        "sidebar_title": "👁️ SolidRules v2.0 (Vision)",
+        "title": "SolidRules: Vision + TRIZ + Safety Check",
+        "sidebar_title": "🛡️ SolidRules v3.5 (Expert)",
         "instruction_header": "**Instrukcja:**",
-        "instr_1": "1. Wgraj plik PDF (Tekst, Tabele LUB Wykresy).",
-        "instr_2": "2. Opisz problem.",
+        "instr_1": "1. Wgraj dokumentację (PDF z Rysunkiem/Normą).",
+        "instr_2": "2. Opisz problem inżynierski.",
         "instr_3": "3. Kliknij Generuj.",
         "footer": "© 2026 SolidRules Engineering",
-        "label_problem": "Twój problem / Pytanie do dokumentacji:",
-        "placeholder": "Np. Patrząc na Wykres 1, jaka jest kategoria dla PS=50bar i V=100L?",
-        "button": "🚀 Analizuj (Tekst + Obraz)",
-        "upload_label": "📂 Wgraj dokumentację (PDF - max kilka stron dla testu)",
-        "report_header": "### 💡 Raport Inżynierski (Multimodalny)",
-        "disclaimer": "⚠️ **Nota prawna:** Zweryfikuj dane z oryginałem.",
-        "status_ok": "✅ Dokument przetworzony! Widzę tekst ({engine}) oraz {img_count} stron jako obrazy.",
-        "system_prompt": """Jesteś Głównym Technologiem.
+        "label_problem": "Opisz problem lub sprzeczność techniczną:",
+        "placeholder": "Np. Muszę zwiększyć ciśnienie robocze, ale nie mogę zmienić geometrii zbiornika...",
+        "button": "🚀 Analizuj i Weryfikuj (TRIZ)",
+        "upload_label": "📂 Wgraj dokumentację / Rysunki (PDF)",
+        "report_header": "### 💡 Raport Ekspercki (TRIZ & Safety)",
+        "disclaimer": "⚠️ **Nota prawna:** System wspomagania decyzji. Wymagana weryfikacja przez uprawnionego inżyniera.",
+        "status_ok": "✅ Dane wczytane: Tekst ({engine}) + Obrazy ({img_count} str.).",
         
-        DANE WEJŚCIOWE: Otrzymałeś tekst z dokumentu ORAZ zrzuty ekranu stron (obrazy).
+        # --- MÓZG SYTEMU: PROMPT INSPIROWANY "CLAUDE SKILLS" ---
+        "system_prompt": """Jesteś Głównym Konstruktorem, Ekspertem TRIZ i Audytorem Bezpieczeństwa (zgodnie z dyrektywami UE, np. PED).
         
-        TWOJE ZADANIE: Łączyć te dane.
+        DANE WEJŚCIOWE:
+        1. OBRAZY: Rysunki techniczne, wykresy (Vision AI).
+        2. TEKST: Normy, DTR, ograniczenia prawne.
         
-        ZASADA KRYTYCZNA DLA WYKRESÓW/TABEL:
-        1. MASZ DOSTĘP do obrazów. Nie mów, że ich nie masz.
-        2. Jeśli pytanie dotyczy wykresu, TWOIM OBOWIĄZKIEM jest spojrzeć na załączone obrazy.
-        3. Ignoruj uproszczone regułki tekstowe, jeśli wykres pokazuje co innego.
-        4. Działaj krok po kroku: Najpierw zidentyfikuj osie na obrazku, potem znajdź wartości, na końcu określ wynik.
+        TWOJE ZADANIE: 
+        Rozwiązać problem inżynierski, a następnie przeprowadzić BEZWZGLĘDNĄ KRYTYKĘ własnych rozwiązań w oparciu o dokumentację.
         
-        Odpowiadaj rzeczowo, inżyniersko, po POLSKU."""
+        PROCEDURA MYŚLENIA (Chain of Thought):
+        
+        KROK 1: DIAGNOZA SOKRATEJSKA (Vision + Text)
+        - Spójrz na obrazy. Zidentyfikuj kluczowe elementy (np. spoiny, kształt dna, osie wykresu).
+        - Zidentyfikuj braki w danych. Jeśli czegoś nie wiesz, przyjmij bezpieczne założenie (Worst Case Scenario) i zaznacz to.
+        
+        KROK 2: GENEROWANIE ROZWIĄZAŃ (TRIZ)
+        - Zdefiniuj Sprzeczność Techniczną (Co chcesz poprawić vs Co się pogarsza).
+        - Wybierz 3 konkretne Zasady TRIZ.
+        - Opisz jak je wdrożyć fizycznie w tym konkretnym urządzeniu.
+        
+        KROK 3: FAZA KRYTYKA (Safety Check & Compliance) - KLUCZOWE!
+        - Wciel się w rolę Inspektora UDT/TDT.
+        - Przeskanuj wgrany tekst PDF. Czy proponowane zmiany są legalne?
+        - Czy zmiana parametrów (np. ciśnienia) przesuwa punkt pracy na wykresie w niebezpieczną strefę (np. Kategoria III -> IV)?
+        - Wymień ryzyka.
+        
+        FORMAT ODPOWIEDZI (Markdown):
+        
+        ## 1. 👁️ Diagnoza Wizualna i Założenia
+        (Co widzę na rysunku/wykresie + Jakie przyjąłem założenia bezpieczeństwa)
+        
+        ## 2. ⚙️ Sprzeczność Techniczna (TRIZ)
+        * **Konflikt:** ...
+        
+        ## 3. 💡 Proponowane Koncepcje
+        (3 rozwiązania. Dla każdego: Zasada TRIZ + Opis Techniczny)
+        
+        ## 4. 🛡️ RAPORT RYZYKA (CRITICAL REVIEW)
+        * **Analiza Zgodności (PDF):** (Cytuj normę/wykres. Czy rozwiązanie jest dopuszczalne?)
+        * **Zidentyfikowane Zagrożenia:** (Co może pójść nie tak?)
+        * **Rekomendacja:** (Wdrożyć / Odrzucić / Wymagane badania NDT)
+        
+        Bądź konkretny, innowacyjny, ale przede wszystkim ODPOWIEDZIALNY. Odpowiadaj po POLSKU."""
     },
     "EN": {
-        "title": "SolidRules: Engineering Assistant (Vision AI)",
-        "sidebar_title": "👁️ SolidRules v2.0 (Vision)",
+        "title": "SolidRules: Vision + TRIZ + Safety Check",
+        "sidebar_title": "🛡️ SolidRules v3.5 (Expert)",
         "instruction_header": "**Instructions:**",
-        "instr_1": "1. Upload PDF (Text, Tables OR Graphs).",
-        "instr_2": "2. Describe problem.",
+        "instr_1": "1. Upload Docs (PDF with Drawings/Standards).",
+        "instr_2": "2. Describe engineering problem.",
         "instr_3": "3. Click Generate.",
         "footer": "© 2026 SolidRules Engineering",
-        "label_problem": "Your problem / Question:",
-        "placeholder": "E.g. Looking at Graph 1, what is the category for PS=50bar and V=100L?",
-        "button": "🚀 Analyze (Text + Vision)",
-        "upload_label": "📂 Upload documentation (PDF - keep it short for testing)",
-        "report_header": "### 💡 Engineering Report (Multimodal)",
-        "disclaimer": "⚠️ **Disclaimer:** Verify data with original document.",
-        "status_ok": "✅ Document processed! I see text ({engine}) and {img_count} pages as images.",
-        "system_prompt": """You are a Chief Technology Officer. You have access to two data sources:
-        1. TEXT: Extracted from the document (might be inaccurate for graphs).
-        2. IMAGES: Original screenshots of each page.
-
-        RULES:
-        1. If the question relates to a GRAPH, SCHEMATIC, or complex TABLE, prioritize ANALYZING THE IMAGES. Look at lines, axes, and legends.
-        2. Use text as support.
-        3. Be engineering-focused.
-        4. Answer in ENGLISH."""
+        "label_problem": "Describe problem or contradiction:",
+        "placeholder": "E.g. I need to increase pressure but cannot change geometry...",
+        "button": "🚀 Analyze & Verify (TRIZ)",
+        "upload_label": "📂 Upload Docs / Drawings (PDF)",
+        "report_header": "### 💡 Expert Report (TRIZ & Safety)",
+        "disclaimer": "⚠️ **Disclaimer:** AI Decision Support. Requires certified engineer verification.",
+        "status_ok": "✅ Data loaded: Text ({engine}) + Images ({img_count} pages).",
+        "system_prompt": """You are a Chief Design Engineer, TRIZ Expert, and Safety Auditor.
+        
+        INPUT DATA:
+        1. IMAGES: Technical drawings, charts (Vision AI).
+        2. TEXT: Standards, manuals, legal constraints.
+        
+        TASK: 
+        Solve the problem using TRIZ, then perform a RUTHLESS CRITIQUE of your own solutions based on the documentation.
+        
+        THOUGHT PROCESS (Chain of Thought):
+        
+        STEP 1: SOCRATIC DIAGNOSIS (Vision + Text)
+        - Analyze images. Identify hotspots.
+        - Identify missing data. Assume Worst Case Scenario if data is missing.
+        
+        STEP 2: TRIZ SOLUTIONS
+        - Define Technical Contradiction.
+        - Select 3 TRIZ Principles.
+        - Describe physical implementation.
+        
+        STEP 3: CRITIC PHASE (Safety Check & Compliance)
+        - Act as a Safety Inspector.
+        - Scan PDF text. Are changes legal?
+        - Does the operating point shift to a dangerous zone on the graph?
+        
+        RESPONSE FORMAT:
+        ## 1. Visual Diagnosis & Assumptions
+        ## 2. Technical Contradiction
+        ## 3. Concepts (TRIZ)
+        ## 4. 🛡️ RISK REPORT (CRITICAL REVIEW)
+        * **Compliance Analysis:** (Cite PDF/Graph)
+        * **Risks:**
+        * **Recommendation:**
+        
+        Answer in ENGLISH."""
     }
 }
 
-# --- NOWOŚĆ: FUNKCJA ZAMIENIAJĄCA PDF NA OBRAZY (BASE64) ---
+# --- FUNKCJE BACKENDOWE (BEZ ZMIAN) ---
 def pdf_to_images_base64(file_bytes):
     images_base64 = []
     try:
-        # Otwieramy PDF z bajtów w pamięci
         doc = fitz.open(stream=file_bytes, filetype="pdf")
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
-            # Renderujemy stronę do obrazka (pixmap) - zoom=2 dla lepszej jakości
             pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-            img_bytes = pix.tobytes("png")
-            # Kodujemy do base64 (tak wymaga OpenAI)
-            img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+            img_b64 = base64.b64encode(pix.tobytes("png")).decode("utf-8")
             images_base64.append(img_b64)
-    except Exception as e:
-        st.error(f"Błąd przetwarzania obrazów: {e}")
+    except Exception as e: st.error(f"Img Error: {e}")
     return images_base64
 
-# --- HYBRYDOWY PARSER TEKSTU (To już znamy) ---
 def parse_hybrid(file_bytes):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         tmp_file.write(file_bytes)
         tmp_path = tmp_file.name
-    
     text_content = ""
-    engine_used = "PDFPlumber (Backup)"
-
-    # Próba 1: LlamaParse
+    engine_used = "PDFPlumber"
     if LLAMA_CLOUD_API_KEY:
         try:
             parser = LlamaParse(api_key=LLAMA_CLOUD_API_KEY, result_type="markdown", premium_mode=True, language="pl")
-            documents = parser.load_data(tmp_path)
-            if documents:
-                text_content = "\n\n".join([doc.text for doc in documents])
-                engine_used = "LlamaParse (PRO)"
+            docs = parser.load_data(tmp_path)
+            if docs:
+                text_content = "\n\n".join([d.text for d in docs])
+                engine_used = "LlamaParse"
         except: pass
-
-    # Próba 2: PDFPlumber (jeśli Llama zawiodła)
     if not text_content or len(text_content) < 50:
         try:
             with pdfplumber.open(tmp_path) as pdf:
-                for page in pdf.pages:
-                    text_content += (page.extract_text() or "") + "\n"
-            engine_used = "PDFPlumber (Backup)"
+                for p in pdf.pages: text_content += (p.extract_text() or "") + "\n"
         except: pass
-        
     os.remove(tmp_path)
     return text_content, engine_used
 
@@ -134,79 +178,49 @@ with st.sidebar:
     t = translations[lang]
     st.header(t["sidebar_title"])
     st.markdown("---")
-    st.info("Engine: GPT-4o (Vision + Text)")
+    st.info("Modules: Vision AI + TRIZ + Compliance Check")
     st.caption(t["footer"])
 
 st.title(t["title"])
 
-# 1. WGRYWANIE I PRZETWARZANIE (TEKST + OBRAZ)
 uploaded_file = st.file_uploader(t["upload_label"], type=["pdf"])
 pdf_text_context = ""
 pdf_images_list = []
-engine_name = ""
 
 if uploaded_file is not None:
-    with st.spinner("👁️‍🗨️ Mielę dokument: Czytam tekst ORAZ robię zdjęcia stron..."):
+    with st.spinner("⚙️ Analiza inżynierska (OCR + Vision)..."):
         file_bytes = uploaded_file.getvalue()
-        
-        # A) Wyciągamy tekst
         pdf_text_context, engine_name = parse_hybrid(file_bytes)
-        
-        # B) Robimy zdjęcia stron
         pdf_images_list = pdf_to_images_base64(file_bytes)
-        
         if pdf_text_context and pdf_images_list:
             st.success(t["status_ok"].format(engine=engine_name, img_count=len(pdf_images_list)))
-            with st.expander("🕵️ DEBUG: Zobacz co widzi AI (Tekst + Miniatury)"):
-                st.write(f"Silnik tekstu: {engine_name}")
-                st.write(f"Liczba stron (obrazów): {len(pdf_images_list)}")
-                # Pokazujemy pierwszą stronę jako przykład
-                if pdf_images_list:
-                     st.image(base64.b64decode(pdf_images_list[0]), caption="Podgląd strony 1 (To widzi GPT-4o)", use_column_width=True)
+            with st.expander("Podgląd dokumentacji"):
+                if pdf_images_list: st.image(base64.b64decode(pdf_images_list[0]), width=300)
 
-# 2. GENEROWANIE (VISION API)
 problem = st.text_area(t["label_problem"], height=100, placeholder=t["placeholder"])
 generate_button = st.button(t["button"], type="primary", use_container_width=True)
 
 if generate_button and problem and pdf_images_list:
-    with st.spinner("🧠 Uruchamiam Vision AI... Patrzę na wykresy i czytam tekst..."):
+    with st.spinner("🧠 Uruchamiam: Vision AI -> TRIZ -> Inspektor Bezpieczeństwa..."):
         client = OpenAI(api_key=OPENAI_API_KEY)
-        
-        # --- BUDOWANIE WIADOMOŚCI MULTIMODALNEJ ---
-        # 1. Instrukcja systemowa
         messages = [{"role": "system", "content": t["system_prompt"]}]
         
-        # 2. Zawartość użytkownika (Tekst + Obrazy)
-        user_content = []
-        # Dodajemy pytanie użytkownika
-        user_content.append({"type": "text", "text": f"PYTANIE UŻYTKOWNIKA: {problem}\n\n"})
-        # Dodajemy wyciągnięty tekst (jako kontekst pomocniczy)
-        if pdf_text_context:
-             user_content.append({"type": "text", "text": f"--- KONTEKST TEKSTOWY (TŁO) ---\n{pdf_text_context[:50000]}\n--- KONIEC TEKSTU ---\n\n"})
+        # Kontekst użytkownika
+        user_content = [{"type": "text", "text": f"PROBLEM UŻYTKOWNIKA: {problem}\n\nKONTEKST Z DOKUMENTACJI (OCR):\n{pdf_text_context[:40000]}"}]
         
-        # Dodajemy OBRAZY (To jest klucz do Vision!)
-        # UWAGA: Dla testu dodajemy max 5 pierwszych stron, żeby nie spalić tokenów.
-        for i, img_b64 in enumerate(pdf_images_list[:5]): 
-            user_content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/png;base64,{img_b64}",
-                    "detail": "high" # Wysoka rozdzielczość do czytania wykresów
-                }
-            })
-            if i == 4: break # Limit 5 stron
-
+        # Dodajemy max 3 obrazy (Vision)
+        for i, img in enumerate(pdf_images_list[:3]):
+            user_content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img}"}})
+            
         messages.append({"role": "user", "content": user_content})
 
-        # 3. Wysłanie do OpenAI
         response = client.chat.completions.create(
-            model="gpt-4o", # Musi być model obsługujący Vision (gpt-4o lub gpt-4o-mini)
+            model="gpt-4o",
             messages=messages,
-            max_tokens=1000,
-            temperature=0.3
+            temperature=0.6 # Balans między kreatywnością a rygorem
         )
         st.markdown(t["report_header"])
         st.markdown(response.choices[0].message.content)
         st.warning(t["disclaimer"])
-elif generate_button and not pdf_images_list:
-     st.warning("Najpierw wgraj plik PDF, aby AI miało na co patrzeć.")
+elif generate_button:
+    st.warning("⚠️ Proszę wgrać plik PDF przed generowaniem rozwiązania.")
