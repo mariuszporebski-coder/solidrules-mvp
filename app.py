@@ -38,7 +38,7 @@ translations = {
         "report_header": "### 💡 Raport Inżynierski (Multimodalny)",
         "disclaimer": "⚠️ **Nota prawna:** Zweryfikuj dane z oryginałem.",
         "status_ok": "✅ Dokument przetworzony! Widzę tekst ({engine}) oraz {img_count} stron jako obrazy.",
-        "system_prompt": ""Jesteś Głównym Technologiem.
+        "system_prompt": """Jesteś Głównym Technologiem.
         
         DANE WEJŚCIOWE: Otrzymałeś tekst z dokumentu ORAZ zrzuty ekranu stron (obrazy).
         
@@ -50,7 +50,7 @@ translations = {
         3. Ignoruj uproszczone regułki tekstowe, jeśli wykres pokazuje co innego.
         4. Działaj krok po kroku: Najpierw zidentyfikuj osie na obrazku, potem znajdź wartości, na końcu określ wynik.
         
-        Odpowiadaj rzeczowo, inżyniersko, po POLSKU.""
+        Odpowiadaj rzeczowo, inżyniersko, po POLSKU."""
     },
     "EN": {
         "title": "SolidRules: Engineering Assistant (Vision AI)",
