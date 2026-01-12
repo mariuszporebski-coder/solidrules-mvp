@@ -140,11 +140,11 @@ st.markdown("---")
 uploaded_file = st.file_uploader(t["upload_label"], type=["pdf"])
 pdf_content = ""
 
+# ... (wcześniejszy kod funkcji parse) ...
+
 if uploaded_file is not None:
     with st.spinner(t["spinner_pdf"]):
-        # Odczytujemy bajty z pliku
         bytes_data = uploaded_file.getvalue()
-        # Wysyłamy do LlamaParse (funkcja z cache)
         parsed_text = parse_pdf_with_llama(bytes_data, uploaded_file.name)
         
         if "Error" in parsed_text:
@@ -152,8 +152,15 @@ if uploaded_file is not None:
         else:
             pdf_content = parsed_text
             st.success(t["file_success"])
-            # Podgląd (opcjonalnie, dla debuggingu można odkomentować)
-            # st.expander("Podgląd treści PDF").markdown(pdf_content[:500] + "...")
+            
+            # --- NOWOŚĆ: DEBUGGER ---
+            with st.expander("🕵️ DEBUG: Zobacz co widzi AI (Kliknij tutaj)"):
+                st.info(f"Pobrano znaków: {len(pdf_content)}")
+                if len(pdf_content) < 100:
+                    st.error("⚠️ UWAGA: Tekst jest podejrzanie krótki! LlamaParse mogła nie zadziałać.")
+                st.markdown("**Początek dokumentu:**")
+                st.text(pdf_content[:2000]) # Pokaż pierwsze 2000 znaków
+            # ------------------------
 
 # 2. POLE TEKSTOWE
 st.markdown("---")
