@@ -3,3 +3,4 @@ openai>=1.10.0
 llama-index>=0.10.0
 llama-parse>=0.4.0
 python-dotenv
+pdfplumber
