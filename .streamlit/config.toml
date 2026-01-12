@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#6366f1"          # Indigo (Twój kolor akcentowy)
+backgroundColor = "#050505"       # Tło główne (prawie czarne, jak sekcja #demo)
+secondaryBackgroundColor = "#0c0c0c" # Tło paska bocznego (jak karty na stronie)
+textColor = "#94a3b8"             # Slate-400 (Twój kolor tekstu)
+font = "sans serif"
