@@ -10,6 +10,7 @@ import pandas as pd
 import csv
 import time
 import json
+import random
 from datetime import datetime
 from openai import OpenAI
 from llama_parse import LlamaParse
@@ -28,34 +29,19 @@ st.markdown("""
         header {visibility: hidden;}
         .stApp { background-color: #050505; }
         
-        /* Sidebar */
-        section[data-testid="stSidebar"] { 
-            background-color: #0c0c0c; 
-            border-right: 1px solid #1e1e1e; 
-        }
+        section[data-testid="stSidebar"] { background-color: #0c0c0c; border-right: 1px solid #1e1e1e; }
         
-        /* Tabs (Zakładki) */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 10px;
-            background-color: #0c0c0c;
-            padding: 10px;
-            border-radius: 12px;
-            border: 1px solid #1e1e1e;
+        /* Stylizacja Kart Agentów (Wariant 1C) */
+        .agent-card {
+            background-color: #111;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
         }
-        .stTabs [data-baseweb="tab"] {
-            height: 50px;
-            white-space: pre-wrap;
-            background-color: transparent;
-            border: none;
-            color: #94a3b8;
-            font-weight: 500;
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: #1e1e2e !important;
-            color: #6366f1 !important;
-            border-bottom: 2px solid #6366f1 !important;
-        }
-
+        .agent-active { border-color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
+        .agent-warning { border-color: #f59e0b; }
+        
         /* UI Elements */
         .stTextInput input, .stTextArea textarea, .stNumberInput input {
             background-color: #111111 !important; color: #e2e8f0 !important;
@@ -72,17 +58,11 @@ st.markdown("""
             background: linear-gradient(to right, #4f46e5, #6366f1); border: none;
         }
         
-        /* Typography */
         h1, h2, h3 { color: #f8fafc !important; }
         p, li, label, .stMarkdown, .stCaption { color: #94a3b8 !important; }
-        
-        /* Alerts */
         .stSuccess { background-color: #064e3b !important; color: #a7f3d0 !important; }
         .stInfo { background-color: #172554 !important; color: #bfdbfe !important; }
         .stWarning { background-color: #451a03 !important; color: #fdba74 !important; }
-        
-        /* JSON View */
-        .json-formatter-container { background-color: #111 !important; color: #eee !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -101,264 +81,152 @@ def check_password():
 
 if not check_password(): st.stop()
 
-# --- FUNKCJE BACKENDOWE ---
-DB_FILE = "lessons_learnt.csv"
-def init_db():
-    if not os.path.exists(DB_FILE):
-        pd.DataFrame(columns=["date", "problem", "solution", "tags"]).to_csv(DB_FILE, index=False)
-def search_lessons(query):
-    if not os.path.exists(DB_FILE): return ""
-    try:
-        df = pd.read_csv(DB_FILE)
-        keywords = query.lower().split()
-        matches = []
-        for index, row in df.iterrows():
-            if any(k in str(row['problem']).lower() for k in keywords if len(k) > 3):
-                matches.append(f"- [CASE: {row['date']}] {str(row['solution'])[:300]}...")
-        return "\n".join(matches[:3]) if matches else ""
-    except: return ""
-def parse_hybrid(file_bytes): 
-    # Mockup dla szybkości, normalnie tutaj byłby LlamaParse
-    return "Treść dokumentu wyekstrahowana z PDF...", "OCR Standard"
-def pdf_to_images_base64(file_bytes):
-    images_base64 = []
-    try:
-        doc = fitz.open(stream=file_bytes, filetype="pdf")
-        for page_num in range(len(doc)):
-            pix = doc.load_page(page_num).get_pixmap(matrix=fitz.Matrix(2, 2))
-            images_base64.append(base64.b64encode(pix.tobytes("png")).decode("utf-8"))
-    except: pass
-    return images_base64
-
-init_db()
+# --- FUNKCJE MOCKUP ---
+def mock_agent_thinking(text):
+    with st.status(text, expanded=True) as status:
+        time.sleep(1)
+        st.write("🔍 Skanowanie załączników...")
+        time.sleep(0.5)
+        st.write("🧠 Ekstrakcja danych (Vision AI)...")
+        time.sleep(0.5)
+        st.write("💰 Sprawdzanie cen stali (API Albeco)...")
+        time.sleep(0.5)
+        status.update(label="Gotowe!", state="complete", expanded=False)
 
 # ==========================================
-# 🎛️ PRZEŁĄCZNIK WARIANTÓW (STRATEGIA)
+# 🎛️ WYBÓR STRATEGII
 # ==========================================
 with st.sidebar:
-    st.markdown("### 🏗️ Architektura Systemu")
+    st.markdown("### 🏗️ Strategia Produktu")
     variant = st.selectbox(
         "Wybierz Koncepcję:",
-        ["WARIANT 1B: EngOps AI (Nowy)", "WARIANT 1A: Rodzina Aplikacji (Stary)"],
+        [
+            "WARIANT 1C: AUTONOMY (Turbo Pivot)",
+            "WARIANT 1B: EngOps AI (Proces)",
+            "WARIANT 1A: Rodzina Aplikacji (Narzędzia)"
+        ],
         index=0
     )
     st.markdown("---")
-
-# ==============================================================================
-# WARIANT 1B: ENGINEERING OPS AI (Cashflow First)
-# ==============================================================================
-if variant == "WARIANT 1B: EngOps AI (Nowy)":
     
-    # Header
-    c1, c2 = st.columns([0.8, 0.2])
-    with c1:
-        st.markdown("# 🏗️ Engineering Ops AI")
-        st.caption("System operacyjny dla firm technicznych | Data-Driven Approach")
-    with c2:
-        st.metric("Status Core", "ONLINE", delta_color="normal")
+    if variant == "WARIANT 1C: AUTONOMY (Turbo Pivot)":
+        st.markdown("**Status Agentów:**")
+        st.success("🟢 Email Watcher: Active")
+        st.success("🟢 Supply Radar: Active")
+        st.warning("🟠 Design Critic: Learning")
 
-    # GŁÓWNE ZAKŁADKI (STRATEGIA CASHFLOW FIRST)
-    tab_data, tab_quote, tab_field, tab_review, tab_core = st.tabs([
-        "1️⃣ DRAWING → DATA", 
-        "2️⃣ QUOTE → ORDER", 
-        "3️⃣ FIELD NOTES", 
-        "4️⃣ DESIGN REVIEW", 
-        "🧠 KNOWLEDGE CORE"
-    ])
-
-    # --- MODUŁ 1: DIGITALIZACJA (DRAWING -> DATA) ---
-    with tab_data:
-        st.markdown("### 📄 Automatyczna Digitalizacja Rysunków")
-        st.info("Zamieniamy 'martwe' PDF-y w dane JSON/CSV dla systemów ERP i CNC.")
-        
-        col_up, col_json = st.columns([1, 1])
-        with col_up:
-            uploaded_dwg = st.file_uploader("Wgraj Rysunek (PDF)", key="v1b_dwg")
-            if uploaded_dwg:
-                st.success("Plik przyjęty. Rozpoczynam ekstrakcję Vision AI...")
-                st.image("https://cdn-icons-png.flaticon.com/512/337/337946.png", width=50) # Placeholder
+# ==============================================================================
+# WARIANT 1C: SOLIDRULES AUTONOMY (Agentic AI)
+# ==============================================================================
+if variant == "WARIANT 1C: AUTONOMY (Turbo Pivot)":
+    
+    st.markdown("# 🤖 SolidRules AUTONOMY")
+    st.caption("Human-in-the-loop Engineering | AI wykonuje pracę, Ty zatwierdzasz.")
+    
+    # PULPIT STEROWNICZY (INBOX)
+    st.markdown("### 📥 Skrzynka Odbiorcza Agentów (Action Required)")
+    
+    col_inbox, col_preview = st.columns([1, 1.5])
+    
+    with col_inbox:
+        # Lista Zadań (To wygląda jak klient poczty, ale dla AI)
+        with st.container(border=True):
+            st.markdown("**Nowe Zgłoszenia (3)**")
+            
+            # Zadanie 1
+            if st.button("🔴 PILNE: Oferta dla TechCorp (50 szt. Wałek)", key="task1", use_container_width=True):
+                st.session_state['active_task'] = 1
+            
+            # Zadanie 2
+            if st.button("🟠 WERYFIKACJA: Rysunek błędny (Brak tolerancji)", key="task2", use_container_width=True):
+                st.session_state['active_task'] = 2
                 
-        with col_json:
-            st.markdown("**Wynik Ekstrakcji (Dane Strukturalne):**")
-            # Mockup danych JSON
-            mock_data = {
-                "part_name": "Wspornik_V2",
-                "material": "S355J2",
-                "quantity": 50,
-                "dimensions": {"L": 200, "W": 100, "H": 15},
-                "tolerances": ["H7", "+/- 0.1"],
-                "surface_treatment": "Ocynk ogniowy"
-            }
-            if uploaded_dwg:
-                st.json(mock_data)
-                st.download_button("📥 Pobierz JSON", json.dumps(mock_data), "data.json")
-                st.download_button("📥 Pobierz CSV", "part,mat,qty\nWspornik,S355,50", "data.csv")
-            else:
-                st.caption("Oczekiwanie na plik...")
+            # Zadanie 3
+            if st.button("🟢 GOTOWE: Faktura od Dostawcy Stali", key="task3", use_container_width=True):
+                st.session_state['active_task'] = 3
 
-    # --- MODUŁ 2: OFERTOWANIE (QUOTE -> ORDER) ---
-    with tab_quote:
+    with col_preview:
+        active_task = st.session_state.get('active_task', 1)
         
-        st.markdown("### 💰 Inteligentne Ofertowanie (Cashflow Engine)")
-        
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.markdown("**1. Wsad (BOM)**")
-            st.file_uploader("Wgraj Złożenie/BOM", key="v1b_quote")
-        with c2:
-            st.markdown("**2. Parametry Biznesowe**")
-            margin = st.slider("Marża (%)", 0, 100, 30)
-            hourly_rate = st.number_input("Stawka CNC (PLN/h)", value=150)
-        with c3:
-            st.markdown("**3. Wynik (Estymacja)**")
-            if st.button("Przelicz Ofertę"):
-                with st.spinner("Analiza geometrii i cen rynkowych..."):
-                    time.sleep(1)
-                    st.metric("Sugerowana Cena", "12 450 PLN", delta=f"Marża: {margin}%")
-                    st.progress(70, text="Prawdopodobieństwo wygrania oferty: Wysokie")
-
-        st.markdown("#### 📜 Historia Ofert (CRM)")
-        df_quotes = pd.DataFrame({
-            "Klient": ["TechCorp", "BuildPol", "AgroMech"],
-            "Projekt": ["Silos X", "Rama Y", "Wał Z"],
-            "Wartość": ["15k", "4k", "22k"],
-            "Status": ["Wysłana", "Akceptacja", "Odrzucona"]
-        })
-        st.dataframe(df_quotes, use_container_width=True)
-
-    # --- MODUŁ 3: WIEDZA Z TERENU (FIELD NOTES) ---
-    with tab_field:
-        st.markdown("### 🛠️ Field Notes AI (Zbieranie wiedzy z terenu)")
-        st.caption("Serwisant nie pisze raportów. On mówi do telefonu.")
-        
-        c_mob1, c_mob2 = st.columns([1, 2])
-        with c_mob1:
-            st.markdown("#### 📱 Interfejs Mobilny")
-            st.info("Nagraj notatkę głosową:")
-            st.audio(None) # Placeholder
-            st.camera_input("Zrób zdjęcie awarii")
+        # SCENARIUSZ 1: AI ZROBIŁO WYCENĘ SAMO
+        if active_task == 1:
+            st.markdown("#### 🤖 Agent: Sales_Bot_v4")
+            st.info("Odebrałem maila od `jan.kowalski@techcorp.pl`. Przeanalizowałem PDF. Sprawdziłem magazyn. Przygotowałem draft oferty.")
             
-        with c_mob2:
-            st.markdown("#### 🧠 AI Processing (Backend)")
+            with st.expander("📄 Podgląd PDF od klienta", expanded=False):
+                st.write("[Rysunek_Walek_Fi50.pdf]")
+            
+            st.markdown("**--- DRAFT ODPOWIEDZI ---**")
+            email_draft = st.text_area("Treść maila do wysłania:", 
+                                       value="Dzień dobry Panie Janie,\nDziękujemy za zapytanie. Wyceniliśmy detal 'Wałek Fi50' wg rysunku 2024-B.\n\nCena: 45,00 PLN netto/szt.\nTermin: 7 dni roboczych (Materiał dostępny od ręki).\n\nPozdrawiam,\nSolidRules AI",
+                                       height=150)
+            
+            c1, c2, c3 = st.columns(3)
+            with c1: st.metric("Marża", "32%", "Bezpieczna")
+            with c2: st.metric("Ryzyko", "Niskie")
+            with c3: 
+                if st.button("✅ Wyślij Ofertę", type="primary"):
+                    st.toast("Oferta wysłana do klienta!")
+                    st.balloons()
+            
+        # SCENARIUSZ 2: AI ZNALAZŁO BŁĄD I PYTA CZŁOWIEKA
+        elif active_task == 2:
+            st.markdown("#### 🤖 Agent: Quality_Guardian")
+            st.error("STOP! Znalazłem problem krytyczny w dokumentacji od `BuildPol`.")
+            
             st.markdown("""
-            **Transkrypcja:** *"Klient zgłasza wibracje pompy. Na moje oko to sprzęgło kłowe, guma jest sparciała."*
-            
-            **Strukturyzacja Danych:**
-            * **Problem:** Wibracje pompy
-            * **Przyczyna:** Zużycie sprzęgła (element elastyczny)
-            * **Tagi:** #Maintenance #Coupling #Vibration
-            * **Akcja:** Zamówić wkładkę sprzęgła typ B.
+            **Zdiagnozowany problem:**
+            Na rysunku `Rama_Spawana.pdf` w widoku B brakuje tolerancji dla otworu pasowanego pod łożysko.
+            Norma ISO 2768-mK nie precyzuje tego wymiaru.
             """)
-            st.button("Zapisz do Knowledge Core", type="primary")
+            
+            st.markdown("**Sugerowana Akcja:**")
+            action = st.radio("Co mam zrobić?", ["Odesłać maila z prośbą o poprawkę", "Przyjąć H7 (Ryzykowne)", "Przekazać do Technologa"])
+            
+            if st.button("Wykonaj Akcję"):
+                st.success(f"Agent wykonuje: {action}")
 
-    # --- MODUŁ 4: AUDYT (DESIGN REVIEW) ---
-    with tab_review:
-        st.markdown("### 🔍 Design Review AI (Audyt Dokumentacji)")
-        st.info("Sprawdzamy spójność i błędy 'szkolne' przed wysłaniem na produkcję.")
-        
-        u_rev = st.file_uploader("Wgraj PDF do weryfikacji", key="v1b_rev")
-        
-        if u_rev:
-            col_l, col_r = st.columns(2)
-            with col_l:
-                st.markdown("**Znalezione Błędy (Checklist):**")
-                st.error("❌ Brak tolerancji ogólnej w tabelce.")
-                st.warning("⚠️ Gwint M20 oznaczony jako 'fi 20'.")
-                st.success("✅ Rzuty zgodne (Europejskie).")
-            with col_r:
-                st.markdown("**Zalecenia:**")
-                st.write("Dodać normę ISO 2768-mK. Poprawić oznaczenie gwintu.")
+        elif active_task == 3:
+            st.success("Faktura zarchiwizowana. Ceny stali zaktualizowane w systemie Estimator.")
 
-    # --- MODUŁ 5: KNOWLEDGE CORE ---
-    with tab_core:
-        st.markdown("### 🧠 Knowledge Core (Fundament)")
-        st.write("Jedno źródło prawdy. Tu trafiają dane z ofert, serwisu i audytów.")
-        
-        query = st.text_input("Przeszukaj pamięć firmy (RAG):", placeholder="np. Dlaczego pękają wały w projekcie X?")
-        if query:
-            st.write(f"Szukam w wektorowej bazie danych dla: '{query}'...")
-            st.info("💡 Znaleziono 3 powiązane notatki z serwisu (Field Notes) i 1 odrzuconą ofertę.")
-
-
-# ==============================================================================
-# WARIANT 1A: RODZINA APLIKACJI (Oryginalna Koncepcja)
-# ==============================================================================
-elif variant == "WARIANT 1A: Rodzina Aplikacji (Stary)":
-    
-    # --- STARY KOD (ZAWINIĘTY W BLOK) ---
-    st.markdown("<div style='text-align: center; margin-bottom: 5px; color: #666; font-size: 0.8em;'>SOLIDRULES ECOSYSTEM v4.5 (Legacy View)</div>", unsafe_allow_html=True)
-
-    selected_app = st.radio(
-        "Nawigacja",
-        ["🚀 INNOVATE", "💰 ESTIMATOR", "📐 METROLOGY", "🔧 FIELD", "🧠 KNOWLEDGE"],
-        horizontal=True,
-        label_visibility="collapsed"
-    )
     st.markdown("---")
+    
+    # WIZUALIZACJA PROCESU W TLE
+    st.markdown("### 🧠 Co dzieje się w tle? (Live Log)")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown("**📨 Email Watcher**")
+        st.code("11:42: Otrzymano PDF.\n11:42: OCR Start.\n11:43: Klasyfikacja: ZAPYTANIE.", language="bash")
+    with c2:
+        st.markdown("**🕸️ Supply Radar**")
+        st.code("11:40: Ping Albeco API...\n11:40: Stal 1.4301 +2% (vs wczoraj).\n11:41: Aktualizacja cennika.", language="bash")
+    with c3:
+        st.markdown("**🛡️ Norm Watchdog**")
+        st.code("11:00: Skan ISO.org...\n11:00: Brak zmian krytycznych.\n11:05: System bezpieczny.", language="bash")
 
-    if selected_app == "🚀 INNOVATE":
-        with st.sidebar:
-            st.header("🚀 Panel Konstruktora")
-            st.markdown("### 🛡️ Watchdog Status")
-            st.warning("⚠️ Wykryto zmiany w prawie!")
-            uploaded_file = st.file_uploader("Rysunek / Norma / DTR (PDF)", type=["pdf"])
 
-        st.title("SolidRules INNOVATE")
-        st.caption("AI-Powered R&D: Rozwiązywanie problemów & Szybka Symulacja")
-
-        pdf_text = ""
-        pdf_imgs = []
-        has_file = False
+# ==============================================================================
+# WARIANT 1B: ENGINEERING OPS AI (Poprzedni)
+# ==============================================================================
+elif variant == "WARIANT 1B: EngOps AI (Proces)":
+    st.markdown("# 🏗️ Engineering Ops AI")
+    st.caption("Procesowe podejście do danych.")
+    tab1, tab2, tab3 = st.tabs(["DRAWING → DATA", "QUOTE → ORDER", "KNOWLEDGE CORE"])
+    
+    with tab1:
+        st.info("Tutaj jest ten 'lepszy Excel' do digitalizacji.")
+        st.file_uploader("Wgraj PDF")
+        st.json({"part": "Shaft", "qty": 10})
         
-        if uploaded_file:
-            has_file = True
-            with st.spinner("Analiza Vision AI..."):
-                file_bytes = uploaded_file.getvalue()
-                pdf_text, _ = parse_hybrid(file_bytes)
-                pdf_imgs = pdf_to_images_base64(file_bytes)
-            st.success(f"✅ Dokument wczytany ({len(pdf_imgs)} stron)")
-            
-            c1, c2 = st.columns(2)
-            with c1: 
-                if pdf_imgs: st.image(base64.b64decode(pdf_imgs[0]), use_container_width=True)
-            with c2:
-                if st.button("Uruchom Instant MES"):
-                    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fem_pole_c.jpg/640px-Fem_pole_c.jpg", caption="Heatmap Naprężeń")
-                    st.error("Hotspot w narożniku A!")
+    with tab2:
+        st.info("Kalkulator ofert.")
+        st.metric("Cena", "100 PLN")
 
-        problem = st.text_area("Opisz problem techniczny:", height=100)
-        
-        if st.button("Generuj Rozwiązanie (TRIZ)", type="primary"):
-            history = search_lessons(problem)
-            system_prompt = "Jesteś Głównym Inżynierem. Użyj TRIZ i historii firmy."
-            user_msg = f"PYTANIE: {problem}\n\nHISTORIA: {history}"
-            if has_file: user_msg += f"\n\nDOKUMENTY: {pdf_text[:10000]}"
-            
-            # Mockup odpowiedzi dla szybkości działania launchera
-            st.markdown("### 💡 Raport Ekspercki")
-            st.markdown(f"**Diagnoza:** Problem dotyczy '{problem}'.\n\n**TRIZ:** Zastosuj zasadę segmentacji.\n\n**Historia:** W 2024 mieliśmy podobny przypadek.")
-            
-            if st.button("Zapisz do Bazy"):
-                save_lesson(problem, "Rozwiązanie TRIZ...")
-                st.success("Zapisano!")
-
-    elif selected_app == "💰 ESTIMATOR":
-        st.title("💰 SolidRules ESTIMATOR")
-        st.info("Wariant 1A: Klasyczny kalkulator")
-        st.write("Wersja w Wariancie 1B jest znacznie bardziej rozbudowana (Quote -> Order).")
-
-    elif selected_app == "📐 METROLOGY":
-        st.title("📐 SolidRules METROLOGY")
-        st.write("Porównywanie 3D (STL) vs 2D (PDF).")
-        st.file_uploader("Model 3D", disabled=True)
-        st.file_uploader("Rysunek 2D", disabled=True)
-
-    elif selected_app == "🔧 FIELD":
-        st.title("🔧 SolidRules FIELD")
-        st.write("Wersja mobilna dla utrzymania ruchu.")
-        st.camera_input("Zdjęcie")
-
-    elif selected_app == "🧠 KNOWLEDGE":
-        st.title("🧠 Centralna Baza Wiedzy")
-        if os.path.exists(DB_FILE):
-            st.dataframe(pd.read_csv(DB_FILE))
+# ==============================================================================
+# WARIANT 1A: RODZINA APLIKACJI (Stary)
+# ==============================================================================
+elif variant == "WARIANT 1A: Rodzina Aplikacji (Narzędzia)":
+    st.markdown("# 💠 Rodzina Aplikacji")
+    st.caption("Zestaw narzędzi dla inżynierów.")
+    st.radio("Wybierz moduł:", ["Innovate", "Metrology", "Field"], horizontal=True)
+    st.info("To jest Twoja pierwotna koncepcja (Toolbox).")
