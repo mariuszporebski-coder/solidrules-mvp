@@ -5,6 +5,7 @@ import nest_asyncio
 import pdfplumber
 import fitz  # PyMuPDF
 import base64
+import hmac
 from openai import OpenAI
 from llama_parse import LlamaParse
 
@@ -19,237 +20,144 @@ except:
     st.error("Brak kluczy API! Ustaw je w Streamlit Cloud Secrets.")
     st.stop()
 
-st.set_page_config(page_title="SolidRules AI", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="SolidRules AI Workspace", page_icon="🛡️", layout="wide")
 
-# --- CSS HACK: DOPASOWANIE DO STRONY CREATIVE CAD STUDIO ---
+# --- CSS: PRO DESIGN ---
 st.markdown("""
     <style>
-        /* Import czcionki Inter (takiej jak na stronie) */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        
-        html, body, [class*="css"] {
-            font-family: 'Inter', sans-serif;
-        }
-
-        /* Ukrycie górnego paska Streamlit (tego kolorowego i hamburgera) dla czystego wyglądu */
+        html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
         header {visibility: hidden;}
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
-        
-        /* Dopasowanie tła głównego kontenera */
-        .stApp {
-            background-color: #050505;
-        }
-
-        /* Stylizacja Paska Bocznego */
-        section[data-testid="stSidebar"] {
-            background-color: #0c0c0c;
-            border-right: 1px solid #1e1e1e;
-        }
-
-        /* Pola tekstowe (Inputy) - Ciemne, cienka ramka */
+        .stApp { background-color: #050505; }
+        section[data-testid="stSidebar"] { background-color: #0c0c0c; border-right: 1px solid #1e1e1e; }
         .stTextInput input, .stTextArea textarea {
-            background-color: #111111 !important;
-            color: #e2e8f0 !important;
-            border: 1px solid #333 !important;
-            border-radius: 8px !important;
+            background-color: #111111 !important; color: #e2e8f0 !important;
+            border: 1px solid #333 !important; border-radius: 8px !important;
         }
         .stTextInput input:focus, .stTextArea textarea:focus {
-            border-color: #6366f1 !important; /* Indigo przy aktywności */
-            box-shadow: 0 0 0 1px #6366f1 !important;
+            border-color: #6366f1 !important; box-shadow: 0 0 0 1px #6366f1 !important;
         }
-
-        /* Przyciski (Buttons) - Styl Indigo */
         div.stButton > button {
-            background-color: #1e1e2e;
-            color: white;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
+            background-color: #1e1e2e; color: white; border: 1px solid #333;
+            border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.3s ease;
         }
         div.stButton > button:hover {
-            background-color: #6366f1; /* Indigo Hover */
-            border-color: #6366f1;
-            color: white;
+            background-color: #6366f1; border-color: #6366f1; color: white;
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
-        
-        /* Przyciski Primary (Te główne "Generuj") */
         div.stButton > button[kind="primary"] {
-            background: linear-gradient(to right, #4f46e5, #6366f1);
-            border: none;
+            background: linear-gradient(to right, #4f46e5, #6366f1); border: none;
         }
-
-        /* Nagłówki i Teksty */
-        h1, h2, h3 {
-            color: #f8fafc !important; /* Prawie biały */
-            font-weight: 600 !important;
-            letter-spacing: -0.02em !important;
-        }
-        p, li, label {
-            color: #94a3b8 !important; /* Slate-400 */
-        }
-        
-        /* Komunikaty (Success/Warning) - Stonowane kolory */
-        .stAlert {
-            background-color: #0c0c0c;
-            border: 1px solid #333;
-            color: #cbd5e1;
-        }
-        
-        /* Spinner */
-        .stSpinner > div {
-            border-top-color: #6366f1 !important;
-        }
-
+        h1, h2, h3 { color: #f8fafc !important; font-weight: 600 !important; }
+        p, li, label, .stMarkdown { color: #94a3b8 !important; }
+        .stAlert { background-color: #0c0c0c; border: 1px solid #333; color: #cbd5e1; }
+        .stSpinner > div { border-top-color: #6366f1 !important; }
     </style>
 """, unsafe_allow_html=True)
-# --- ZABEZPIECZENIE HASŁEM ---
-import hmac
 
+# --- ZABEZPIECZENIE HASŁEM ---
 def check_password():
-    """Zwraca `True` jeśli użytkownik wpisał poprawne hasło."""
+    if "password_correct" not in st.session_state:
+        st.session_state["password_correct"] = False
+
     def password_entered():
         if hmac.compare_digest(st.session_state["password"], st.secrets["APP_PASSWORD"]):
             st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Nie przechowujemy hasła
+            del st.session_state["password"]
         else:
             st.session_state["password_correct"] = False
 
-    if st.session_state.get("password_correct", False):
+    if st.session_state["password_correct"]:
         return True
 
-    st.markdown("### 🔒 Strefa Inżynierska Chroniona")
-    st.text_input("Podaj kod dostępu:", type="password", on_change=password_entered, key="password")
-    
+    st.markdown("### 🔒 SolidRules Protected Workspace")
+    st.text_input("Enter Access Code:", type="password", on_change=password_entered, key="password")
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-        st.error("❌ Błędny kod dostępu.")
+        st.error("❌ Invalid Access Code.")
     return False
 
-# BLOKADA APLIKACJI
 if not check_password():
     st.stop()
-# --- TŁUMACZENIA (SUPER-PROMPT "CRITIC & TRIZ") ---
-# ... (reszta kodu bez zmian) ...
 
-# --- TŁUMACZENIA (SUPER-PROMPT "CRITIC & TRIZ") ---
+# --- TŁUMACZENIA & PROMPT ---
 translations = {
     "PL": {
-        "title": "SolidRules: Vision + TRIZ + Safety Check",
-        "sidebar_title": "🛡️ SolidRules v3.5 (Expert)",
-        "instruction_header": "**Instrukcja:**",
-        "instr_1": "1. Wgraj dokumentację (PDF z Rysunkiem/Normą).",
-        "instr_2": "2. Opisz problem inżynierski.",
-        "instr_3": "3. Kliknij Generuj.",
+        "title": "SolidRules: Inżynierski Workspace AI",
+        "sidebar_title": "🛡️ SolidRules v4.0 (Universal)",
         "footer": "© 2026 SolidRules Engineering",
-        "label_problem": "Opisz problem lub sprzeczność techniczną:",
-        "placeholder": "Np. Muszę zwiększyć ciśnienie robocze, ale nie mogę zmienić geometrii zbiornika...",
-        "button": "🚀 Analizuj i Weryfikuj (TRIZ)",
-        "upload_label": "📂 Wgraj dokumentację / Rysunki (PDF)",
-        "report_header": "### 💡 Raport Ekspercki (TRIZ & Safety)",
-        "disclaimer": "⚠️ **Nota prawna:** System wspomagania decyzji. Wymagana weryfikacja przez uprawnionego inżyniera.",
-        "status_ok": "✅ Dane wczytane: Tekst ({engine}) + Obrazy ({img_count} str.).",
+        "label_problem": "Twoje zapytanie inżynierskie:",
+        "placeholder": "Np. Jak obliczyć wytrzymałość spoiny pachwinowej? ALBO (jeśli wgrałeś plik): Jaki gwint ma ta śruba?",
+        "button": "🚀 Generuj Odpowiedź",
+        "upload_label": "📂 (Opcjonalnie) Wgraj Dokumentację / Rysunek (PDF)",
+        "status_no_file": "🧠 Tryb: Wiedza Ogólna (GPT-4o)",
+        "status_file": "📄 Tryb: Analiza Dokumentacji ({pages} str.)",
+        "report_header": "### 💡 Raport Inżynierski",
+        "disclaimer": "⚠️ **Nota prawna:** System wspomagania decyzji. Wymagana weryfikacja inżynierska.",
         
-        # --- MÓZG SYTEMU: PROMPT INSPIROWANY "CLAUDE SKILLS" ---
-        "system_prompt": """Jesteś Głównym Konstruktorem, Ekspertem TRIZ i Audytorem Bezpieczeństwa (zgodnie z dyrektywami UE, np. PED).
+        # --- PROMPT UNIWERSALNY (Z OBSŁUGĄ BRAKU PLIKU) ---
+        "system_prompt": """Jesteś Głównym Inżynierem. 
         
-        DANE WEJŚCIOWE:
-        1. OBRAZY: Rysunki techniczne, wykresy (Vision AI).
-        2. TEKST: Normy, DTR, ograniczenia prawne.
+        STATUS DANYCH WEJŚCIOWYCH:
+        - Dokumentacja: {has_docs}
         
-        TWOJE ZADANIE: 
-        Rozwiązać problem inżynierski, a następnie przeprowadzić BEZWZGLĘDNĄ KRYTYKĘ własnych rozwiązań w oparciu o dokumentację.
-        
-        PROCEDURA MYŚLENIA (Chain of Thought):
-        
-        KROK 1: DIAGNOZA SOKRATEJSKA (Vision + Text)
-        - Spójrz na obrazy. Zidentyfikuj kluczowe elementy (np. spoiny, kształt dna, osie wykresu).
-        - Zidentyfikuj braki w danych. Jeśli czegoś nie wiesz, przyjmij bezpieczne założenie (Worst Case Scenario) i zaznacz to.
-        
-        KROK 2: GENEROWANIE ROZWIĄZAŃ (TRIZ)
-        - Zdefiniuj Sprzeczność Techniczną (Co chcesz poprawić vs Co się pogarsza).
-        - Wybierz 3 konkretne Zasady TRIZ.
-        - Opisz jak je wdrożyć fizycznie w tym konkretnym urządzeniu.
-        
-        KROK 3: FAZA KRYTYKA (Safety Check & Compliance) - KLUCZOWE!
-        - Wciel się w rolę Inspektora UDT/TDT.
-        - Przeskanuj wgrany tekst PDF. Czy proponowane zmiany są legalne?
-        - Czy zmiana parametrów (np. ciśnienia) przesuwa punkt pracy na wykresie w niebezpieczną strefę (np. Kategoria III -> IV)?
-        - Wymień ryzyka.
+        TWOJE TRYBY DZIAŁANIA (Wybierz sam):
+
+        TRYB A: WIEDZA OGÓLNA (Gdy brak dokumentacji lub pytanie jest ogólne)
+        - Użyj swojej wiedzy inżynierskiej (normy ISO, DIN, fizyka, materiałoznawstwo).
+        - Bądź precyzyjny. Podawaj wzory i typowe wartości.
+
+        TRYB B: BIBLIOTEKARZ (Gdy jest dokumentacja i pytanie o dane)
+        - Odczytaj dane z wgranego tekstu/wykresu.
+        - Cytuj źródło (np. "Wg Tabeli na stronie 2").
+        - Nie zmyślaj danych, których nie ma w pliku.
+
+        TRYB C: EKSPERT TRIZ (Gdy jest problem/awaria)
+        - Zdefiniuj sprzeczność.
+        - Wybierz zasady TRIZ.
+        - Jeśli jest plik: Sprawdź zgodność pomysłu z wgraną normą (Krytyk).
         
         FORMAT ODPOWIEDZI (Markdown):
-        
-        ## 1. 👁️ Diagnoza Wizualna i Założenia
-        (Co widzę na rysunku/wykresie + Jakie przyjąłem założenia bezpieczeństwa)
-        
-        ## 2. ⚙️ Sprzeczność Techniczna (TRIZ)
-        * **Konflikt:** ...
-        
-        ## 3. 💡 Proponowane Koncepcje
-        (3 rozwiązania. Dla każdego: Zasada TRIZ + Opis Techniczny)
-        
-        ## 4. 🛡️ RAPORT RYZYKA (CRITICAL REVIEW)
-        * **Analiza Zgodności (PDF):** (Cytuj normę/wykres. Czy rozwiązanie jest dopuszczalne?)
-        * **Zidentyfikowane Zagrożenia:** (Co może pójść nie tak?)
-        * **Rekomendacja:** (Wdrożyć / Odrzucić / Wymagane badania NDT)
-        
-        Bądź konkretny, innowacyjny, ale przede wszystkim ODPOWIEDZIALNY. Odpowiadaj po POLSKU."""
+        Bądź konkretny. Jeśli używasz TRIZ, zachowaj strukturę: Diagnoza -> Sprzeczność -> Koncepcje -> Ryzyko.
+        Odpowiadaj po POLSKU."""
     },
     "EN": {
-        "title": "SolidRules: Vision + TRIZ + Safety Check",
-        "sidebar_title": "🛡️ SolidRules v3.5 (Expert)",
-        "instruction_header": "**Instructions:**",
-        "instr_1": "1. Upload Docs (PDF with Drawings/Standards).",
-        "instr_2": "2. Describe engineering problem.",
-        "instr_3": "3. Click Generate.",
+        "title": "SolidRules: Engineering AI Workspace",
+        "sidebar_title": "🛡️ SolidRules v4.0 (Universal)",
         "footer": "© 2026 SolidRules Engineering",
-        "label_problem": "Describe problem or contradiction:",
-        "placeholder": "E.g. I need to increase pressure but cannot change geometry...",
-        "button": "🚀 Analyze & Verify (TRIZ)",
-        "upload_label": "📂 Upload Docs / Drawings (PDF)",
-        "report_header": "### 💡 Expert Report (TRIZ & Safety)",
-        "disclaimer": "⚠️ **Disclaimer:** AI Decision Support. Requires certified engineer verification.",
-        "status_ok": "✅ Data loaded: Text ({engine}) + Images ({img_count} pages).",
-        "system_prompt": """You are a Chief Design Engineer, TRIZ Expert, and Safety Auditor.
+        "label_problem": "Your engineering query:",
+        "placeholder": "E.g. How to calculate weld strength? OR (if file uploaded): What is the thread pitch?",
+        "button": "🚀 Generate Response",
+        "upload_label": "📂 (Optional) Upload Docs / Drawing (PDF)",
+        "status_no_file": "🧠 Mode: General Knowledge (GPT-4o)",
+        "status_file": "📄 Mode: Document Analysis ({pages} pages)",
+        "report_header": "### 💡 Engineering Report",
+        "disclaimer": "⚠️ **Disclaimer:** AI Decision Support. Verification required.",
         
-        INPUT DATA:
-        1. IMAGES: Technical drawings, charts (Vision AI).
-        2. TEXT: Standards, manuals, legal constraints.
+        "system_prompt": """You are a Chief Engineer.
         
-        TASK: 
-        Solve the problem using TRIZ, then perform a RUTHLESS CRITIQUE of your own solutions based on the documentation.
+        INPUT STATUS:
+        - Documentation Provided: {has_docs}
         
-        THOUGHT PROCESS (Chain of Thought):
+        YOUR MODES:
+        MODE A: GENERAL KNOWLEDGE (No docs or general question)
+        - Use engineering knowledge (ISO, DIN, Physics).
         
-        STEP 1: SOCRATIC DIAGNOSIS (Vision + Text)
-        - Analyze images. Identify hotspots.
-        - Identify missing data. Assume Worst Case Scenario if data is missing.
+        MODE B: LIBRARIAN (Docs present + Data lookup)
+        - Read specific data from text/vision.
+        - Cite source.
         
-        STEP 2: TRIZ SOLUTIONS
-        - Define Technical Contradiction.
-        - Select 3 TRIZ Principles.
-        - Describe physical implementation.
-        
-        STEP 3: CRITIC PHASE (Safety Check & Compliance)
-        - Act as a Safety Inspector.
-        - Scan PDF text. Are changes legal?
-        - Does the operating point shift to a dangerous zone on the graph?
-        
-        RESPONSE FORMAT:
-        ## 1. Visual Diagnosis & Assumptions
-        ## 2. Technical Contradiction
-        ## 3. Concepts (TRIZ)
-        ## 4. 🛡️ RISK REPORT (CRITICAL REVIEW)
-        * **Compliance Analysis:** (Cite PDF/Graph)
-        * **Risks:**
-        * **Recommendation:**
+        MODE C: TRIZ EXPERT (Problem Solving)
+        - Define contradiction.
+        - Apply TRIZ principles.
+        - If docs present: Check compliance.
         
         Answer in ENGLISH."""
     }
 }
 
-# --- FUNKCJE BACKENDOWE (BEZ ZMIAN) ---
+# --- FUNKCJE BACKENDOWE ---
 def pdf_to_images_base64(file_bytes):
     images_base64 = []
     try:
@@ -262,6 +170,7 @@ def pdf_to_images_base64(file_bytes):
     except Exception as e: st.error(f"Img Error: {e}")
     return images_base64
 
+@st.cache_data(show_spinner=False)
 def parse_hybrid(file_bytes):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         tmp_file.write(file_bytes)
@@ -290,49 +199,81 @@ with st.sidebar:
     t = translations[lang]
     st.header(t["sidebar_title"])
     st.markdown("---")
-    st.info("Modules: Vision AI + TRIZ + Compliance Check")
+    
+    # 1. WGRYWANIE (Teraz w Sidebarze dla czystości)
+    uploaded_file = st.file_uploader(t["upload_label"], type=["pdf"])
+    
+    st.markdown("---")
     st.caption(t["footer"])
 
+# --- GŁÓWNA STRONA ---
 st.title(t["title"])
 
-uploaded_file = st.file_uploader(t["upload_label"], type=["pdf"])
+# ZMIENNE STANU (DLA LOGIKI BEZ PLIKU)
 pdf_text_context = ""
 pdf_images_list = []
+has_file = False
 
+# PRZETWARZANIE PLIKU (TYLKO JEŚLI JEST)
 if uploaded_file is not None:
-    with st.spinner("⚙️ Analiza inżynierska (OCR + Vision)..."):
+    has_file = True
+    with st.spinner("⚙️ Analiza dokumentacji..."):
         file_bytes = uploaded_file.getvalue()
         pdf_text_context, engine_name = parse_hybrid(file_bytes)
         pdf_images_list = pdf_to_images_base64(file_bytes)
-        if pdf_text_context and pdf_images_list:
-            st.success(t["status_ok"].format(engine=engine_name, img_count=len(pdf_images_list)))
-            with st.expander("Podgląd dokumentacji"):
-                if pdf_images_list: st.image(base64.b64decode(pdf_images_list[0]), width=300)
+        
+    # Wskaźnik statusu
+    st.info(t["status_file"].format(pages=len(pdf_images_list)))
+    with st.expander("Podgląd (Vision AI)"):
+        if pdf_images_list: st.image(base64.b64decode(pdf_images_list[0]), width=300)
+else:
+    # Wskaźnik statusu "Bez pliku"
+    st.info(t["status_no_file"])
 
+# 2. SEKCJA PYTANIA (ZAWSZE WIDOCZNA)
 problem = st.text_area(t["label_problem"], height=100, placeholder=t["placeholder"])
 generate_button = st.button(t["button"], type="primary", use_container_width=True)
 
-if generate_button and problem and pdf_images_list:
-    with st.spinner("🧠 Uruchamiam: Vision AI -> TRIZ -> Inspektor Bezpieczeństwa..."):
+if generate_button and problem:
+    with st.spinner("🧠 Analiza..."):
         client = OpenAI(api_key=OPENAI_API_KEY)
-        messages = [{"role": "system", "content": t["system_prompt"]}]
         
-        # Kontekst użytkownika
-        user_content = [{"type": "text", "text": f"PROBLEM UŻYTKOWNIKA: {problem}\n\nKONTEKST Z DOKUMENTACJI (OCR):\n{pdf_text_context[:40000]}"}]
+        # Formatowanie Promptu
+        doc_status = "TAK (Używaj danych z pliku)" if has_file else "NIE (Używaj wiedzy ogólnej)"
+        final_system_prompt = t["system_prompt"].format(has_docs=doc_status)
         
-        # Dodajemy max 3 obrazy (Vision)
-        for i, img in enumerate(pdf_images_list[:3]):
-            user_content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img}"}})
+        messages = [{"role": "system", "content": final_system_prompt}]
+        
+        # Budowanie treści użytkownika
+        user_text = f"PYTANIE: {problem}\n"
+        if has_file and pdf_text_context:
+            user_text += f"\n--- KONTEKST PLIKU (OCR) ---\n{pdf_text_context[:40000]}\n"
             
+        user_content = [{"type": "text", "text": user_text}]
+        
+        # Dodawanie obrazów (Tylko jeśli są)
+        if has_file and pdf_images_list:
+            for i, img in enumerate(pdf_images_list[:3]):
+                user_content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img}"}})
+                
         messages.append({"role": "user", "content": user_content})
 
+        # Wywołanie API
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
-            temperature=0.6 # Balans między kreatywnością a rygorem
+            temperature=0.4 # Balans: Kreatywność (TRIZ) vs Fakty (Normy)
         )
+        
+        # Wyświetlanie
         st.markdown(t["report_header"])
-        st.markdown(response.choices[0].message.content)
+        report_text = response.choices[0].message.content
+        st.markdown(report_text)
+        
+        # Pobieranie
+        st.download_button("📥 Pobierz Raport", report_text, "SolidRules_Report.md", "text/markdown")
+        
         st.warning(t["disclaimer"])
+        
 elif generate_button:
-    st.warning("⚠️ Proszę wgrać plik PDF przed generowaniem rozwiązania.")
+    st.warning("⚠️ Wpisz pytanie, aby rozpocząć.")
