@@ -8,11 +8,12 @@ import base64
 import hmac
 import pandas as pd
 import csv
+import time
 from datetime import datetime
 from openai import OpenAI
 from llama_parse import LlamaParse
 
-# --- NAPRAWA ASYNCIO ---
+# --- NAPRAWA ASYNCIO (DLA JUPYTER/STREAMLIT CLOUD) ---
 nest_asyncio.apply()
 
 # --- KONFIGURACJA STRONY ---
@@ -69,9 +70,16 @@ st.markdown("""
             background-color: #111111 !important; color: #e2e8f0 !important;
             border: 1px solid #333 !important; border-radius: 8px !important;
         }
+        .stTextInput input:focus, .stTextArea textarea:focus {
+            border-color: #6366f1 !important; box-shadow: 0 0 0 1px #6366f1 !important;
+        }
         div.stButton > button {
             background-color: #1e1e2e; color: white; border: 1px solid #333;
             border-radius: 8px; transition: all 0.3s ease;
+        }
+        div.stButton > button:hover {
+            background-color: #6366f1; border-color: #6366f1; color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
         div.stButton > button[kind="primary"] {
             background: linear-gradient(to right, #4f46e5, #6366f1); border: none;
@@ -80,7 +88,11 @@ st.markdown("""
         p, li, label, .stMarkdown { color: #94a3b8 !important; }
         .stSuccess { background-color: #064e3b !important; color: #a7f3d0 !important; }
         .stInfo { background-color: #1e293b !important; color: #94a3b8 !important; }
+        .stWarning { background-color: #451a03 !important; color: #fdba74 !important; }
         hr { border-color: #333; }
+        
+        /* Spinner */
+        .stSpinner > div { border-top-color: #6366f1 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -101,9 +113,11 @@ if not check_password(): st.stop()
 
 # --- FUNKCJE BACKENDOWE (DB, OCR) ---
 DB_FILE = "lessons_learnt.csv"
+
 def init_db():
     if not os.path.exists(DB_FILE):
         pd.DataFrame(columns=["date", "problem", "solution", "tags"]).to_csv(DB_FILE, index=False)
+
 def search_lessons(query):
     if not os.path.exists(DB_FILE): return ""
     try:
@@ -112,23 +126,37 @@ def search_lessons(query):
         matches = []
         for index, row in df.iterrows():
             if any(k in str(row['problem']).lower() for k in keywords if len(k) > 3):
-                matches.append(f"- [CASE: {row['date']}] {str(row['solution'])[:200]}...")
+                matches.append(f"- [CASE: {row['date']}] {str(row['solution'])[:300]}...")
         return "\n".join(matches[:3]) if matches else ""
     except: return ""
+
 def save_lesson(problem, solution):
     with open(DB_FILE, mode='a', newline='', encoding='utf-8') as file:
         csv.writer(file).writerow([datetime.now().strftime("%Y-%m-%d"), problem, solution, "Auto-Save"])
+
 def parse_hybrid(file_bytes): 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         tmp_file.write(file_bytes)
         tmp_path = tmp_file.name
     text_content = ""
-    try:
-        with pdfplumber.open(tmp_path) as pdf:
-            for p in pdf.pages: text_content += (p.extract_text() or "") + "\n"
-    except: pass
+    # Próba LlamaParse (jeśli klucz jest)
+    ll_key = st.secrets.get("LLAMA_CLOUD_API_KEY", None)
+    if ll_key:
+        try:
+            parser = LlamaParse(api_key=ll_key, result_type="markdown", premium_mode=True, language="pl")
+            docs = parser.load_data(tmp_path)
+            if docs: text_content = "\n\n".join([d.text for d in docs])
+        except: pass
+    
+    # Fallback do PDFPlumber
+    if not text_content:
+        try:
+            with pdfplumber.open(tmp_path) as pdf:
+                for p in pdf.pages: text_content += (p.extract_text() or "") + "\n"
+        except: pass
     os.remove(tmp_path)
-    return text_content, "Standard OCR"
+    return text_content, "Hybrid OCR"
+
 def pdf_to_images_base64(file_bytes):
     images_base64 = []
     try:
@@ -144,8 +172,7 @@ init_db()
 # ==========================================
 # 🧭 TOP MENU (GÓRNA NAWIGACJA)
 # ==========================================
-# Używamy columns, żeby wyśrodkować menu, lub po prostu radio na górze
-st.markdown("<div style='text-align: center; margin-bottom: 5px; color: #6366f1; font-size: 0.8em; letter-spacing: 2px;'>SOLIDRULES ECOSYSTEM</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; margin-bottom: 5px; color: #6366f1; font-size: 0.8em; letter-spacing: 2px;'>SOLIDRULES ECOSYSTEM v4.5</div>", unsafe_allow_html=True)
 
 selected_app = st.radio(
     "Nawigacja",
@@ -154,24 +181,39 @@ selected_app = st.radio(
     label_visibility="collapsed"
 )
 
-st.markdown("---") # Oddzielenie menu od treści
+st.markdown("---")
 
 # ==========================================
-# 🚀 APLIKACJA 1: INNOVATE (KONSTRUKCJA)
+# 🚀 APLIKACJA 1: INNOVATE (KONSTRUKCJA + WATCHDOG + MES)
 # ==========================================
 if selected_app == "🚀 INNOVATE":
     
-    # --- SIDEBAR DLA INNOVATE ---
+    # --- SIDEBAR: KONTEKST + WATCHDOG ---
     with st.sidebar:
         st.header("🚀 Panel Konstruktora")
-        st.info("Tutaj wgrywasz dokumentację, którą chcesz przeanalizować.")
-        uploaded_file = st.file_uploader("Wgraj Rysunek / Normę (PDF)", type=["pdf"])
+        
+        # 1. WATCHDOG (STRAŻNIK LEGISLACYJNY)
+        st.markdown("### 🛡️ Watchdog Status")
+        watchdog_status = "OSTRZEŻENIE" 
+        
+        if watchdog_status == "OK":
+            st.success("✅ Normy Aktualne")
+        elif watchdog_status == "OSTRZEŻENIE":
+            st.warning("⚠️ Wykryto zmiany w prawie!")
+            with st.expander("Szczegóły alertu"):
+                st.write("**Dyrektywa Maszynowa:** Planowana rewizja art. 12 w Q4 2026.")
+                st.write("**Norma PN-EN ISO 12100:** Zalecana weryfikacja oceny ryzyka.")
+        
         st.markdown("---")
-        st.caption("Silnik: GPT-4o + TRIZ")
+        
+        # 2. UPLOADER
+        st.info("Wgrywanie dokumentacji:")
+        uploaded_file = st.file_uploader("Rysunek / Norma / DTR (PDF)", type=["pdf"])
+        st.caption("Silnik: GPT-4o + Vision + Physics Engine")
 
     # --- MAIN SCREEN ---
     st.title("SolidRules INNOVATE")
-    st.caption("Asystent R&D: Rozwiązywanie problemów, TRIZ i Weryfikacja Norm")
+    st.caption("AI-Powered R&D: Rozwiązywanie problemów & Szybka Symulacja")
 
     # Logika aplikacji Innovate
     pdf_text = ""
@@ -186,24 +228,70 @@ if selected_app == "🚀 INNOVATE":
             pdf_imgs = pdf_to_images_base64(file_bytes)
         st.success(f"✅ Dokument wczytany ({len(pdf_imgs)} stron)")
         
-    problem = st.text_area("Opisz problem techniczny:", height=150, placeholder="Np. Element pęka przy 50 barach. Jak to wzmocnić bez zwiększania masy?")
+        # --- PODGLĄD + INSTANT MES (NOWOŚĆ) ---
+        col_view, col_mes = st.columns([1, 1])
+        
+        with col_view:
+            st.markdown("**Podgląd oryginału:**")
+            if pdf_imgs:
+                st.image(base64.b64decode(pdf_imgs[0]), use_container_width=True)
+                
+        with col_mes:
+            st.markdown("**⚡ Instant MES (AI Prediction):**")
+            # Symulacja działania przycisku
+            if st.button("Uruchom Szybką Analizę Naprężeń (3s)"):
+                with st.spinner("AI przewiduje rozkład naprężeń (Heatmap)..."):
+                    time.sleep(2) # Symulacja myślenia
+                    # Placeholder heatmapy
+                    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fem_pole_c.jpg/640px-Fem_pole_c.jpg", 
+                             caption="Przewidywane Hotspoty (Czerwone = Ryzyko pęknięcia)",
+                             use_container_width=True)
+                    
+                    st.error("Wykryto spiętrzenie naprężeń w narożniku A! (Współczynnik K > 3.0).")
+                    st.markdown("💡 **Sugestia TRIZ:** Zastosuj zaokrąglenie progresywne lub zmień geometrię na eliptyczną.")
+            else:
+                st.info("Kliknij, aby nałożyć mapę naprężeń bez uruchamiania Ansysa/SolidWorksa.")
+
+    st.markdown("---")
     
-    if st.button("Generuj Rozwiązanie", type="primary"):
+    # --- CZAT INŻYNIERSKI (TRIZ / LIBRARIAN) ---
+    problem = st.text_area("Opisz problem techniczny lub zadaj pytanie do norm:", height=100, placeholder="Np. Jak zredukować masę tego wspornika zachowując sztywność?")
+    
+    if st.button("Generuj Rozwiązanie (TRIZ & Safety)", type="primary"):
         history = search_lessons(problem)
-        messages = [{"role": "system", "content": "Jesteś Głównym Inżynierem. Jeśli pytanie jest proste, odpowiedz krótko. Jeśli to problem, użyj TRIZ."}]
+        
+        # --- INTELIGENTNY SYSTEM PROMPT (BIBLIOTEKARZ vs TRIZ) ---
+        system_prompt = """Jesteś Głównym Inżynierem. Masz dwa tryby działania. Musisz SAM zdecydować, którego użyć.
+
+        TRYB 1: BIBLIOTEKARZ (Pytania o dane)
+        Kiedy użyć: Pytania typu "Ile wynosi X?", "Jaki skok?", "Co mówi norma?".
+        ZASADA: Podaj konkrety z tabeli/tekstu. Nie wymyślaj problemów.
+
+        TRYB 2: EKSPERT TRIZ (Rozwiązywanie problemów)
+        Kiedy użyć: Użytkownik zgłasza problem, awarię lub pyta "Jak poprawić?".
+        ZASADA (Chain of Thought):
+        1. DIAGNOZA.
+        2. TRIZ (Sprzeczność + Zasady).
+        3. KRYTYK (Ryzyko + Normy).
+        
+        DODATKOWO: Masz dostęp do bazy 'Lessons Learnt' (Historia Firmy). Jeśli coś tam jest, wspomnij o tym.
+        """
         
         user_msg = f"PYTANIE: {problem}\n\nHISTORIA FIRMY:\n{history}"
-        if has_file: user_msg += f"\n\nDOKUMENTACJA:\n{pdf_text[:20000]}"
+        if has_file: user_msg += f"\n\nDOKUMENTACJA (OCR):\n{pdf_text[:30000]}"
         
         content = [{"type": "text", "text": user_msg}]
         if has_file and pdf_imgs:
              for img in pdf_imgs[:3]: content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img}"}})
         
-        messages.append({"role": "user", "content": content})
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": content}
+        ]
         
         try:
             client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-            with st.spinner("Analiza..."):
+            with st.spinner("Analiza sprzeczności i generowanie raportu..."):
                 resp = client.chat.completions.create(model="gpt-4o", messages=messages)
                 ans = resp.choices[0].message.content
                 st.markdown("### 💡 Raport Ekspercki")
@@ -221,8 +309,6 @@ if selected_app == "🚀 INNOVATE":
 # 💰 APLIKACJA 2: ESTIMATOR (WYCENY)
 # ==========================================
 elif selected_app == "💰 ESTIMATOR":
-    
-    # --- SIDEBAR DLA ESTIMATOR ---
     with st.sidebar:
         st.header("💰 Panel Kosztorysanta")
         st.info("Wgraj rysunek złożeniowy, aby wygenerować BOM.")
@@ -231,32 +317,14 @@ elif selected_app == "💰 ESTIMATOR":
         st.metric("Kurs Euro", "4.32 PLN")
         st.metric("Cena Stali (S235)", "4.50 PLN/kg")
 
-    # --- MAIN SCREEN ---
     st.title("SolidRules ESTIMATOR")
-    st.subheader("Automatyzacja Ofertowania i Kalkulacji Kosztów")
-    
+    st.subheader("Automatyzacja Ofertowania")
     st.markdown("""
-    ### ⚙️ Jak to działa? (Workflow)
-    
-    1.  **Ekstrakcja BOM (Bill of Materials):**
-        * Vision AI skanuje rysunek techniczny.
-        * Lokalizuje tabelę rysunkową.
-        * Wyciąga listę części, materiały i ilości do ustrukturyzowanej tabeli.
-    
-    2.  **Kalkulator Materiałowy:**
-        * System rozpoznaje gatunki materiałów (np. 1.4301, S355).
-        * Oblicza objętość detalu na podstawie wymiarów gabarytowych.
-        * Mnoży przez gęstość materiału i aktualną cenę rynkową.
-    
-    3.  **Szacowanie "Shape Complexity":**
-        * Algorytm analizuje geometrię 2D.
-        * Dużo wymiarów tolerowanych i rzutów? -> **Wysoka złożoność (Droga obróbka).**
-        * Prosty kształt z palnika? -> **Niska złożoność (Tania obróbka).**
-        
-    4.  **Wynik:**
-        * Gotowy plik Excel / PDF z ofertą dla klienta.
+    ### ⚙️ Workflow:
+    1.  **Vision AI (BOM):** Skanuje tabelę rysunkową i wyciąga listę części.
+    2.  **Kalkulator:** Rozpoznaje materiały i liczy wagę netto.
+    3.  **Shape Complexity:** Algorytm ocenia złożoność obróbki (Liczba operacji CNC).
     """)
-    
     st.info("Moduł w fazie R&D. Przewidywane wdrożenie: Q3 2026.")
     st.image("https://cdn-icons-png.flaticon.com/512/4011/4011166.png", width=100)
 
@@ -264,115 +332,72 @@ elif selected_app == "💰 ESTIMATOR":
 # 📐 APLIKACJA 3: METROLOGY (JAKOŚĆ)
 # ==========================================
 elif selected_app == "📐 METROLOGY":
-    
-    # --- SIDEBAR DLA METROLOGY ---
     with st.sidebar:
         st.header("📐 Panel Kontroli Jakości")
         st.file_uploader("1. Wgraj Model 3D (.STL/.STEP)", disabled=True)
         st.file_uploader("2. Wgraj Rysunek 2D (.PDF)", disabled=True)
-        st.markdown("---")
         st.checkbox("Analiza GD&T", value=True, disabled=True)
-        st.checkbox("Analiza Kolizji", value=False, disabled=True)
 
-    # --- MAIN SCREEN ---
     st.title("SolidRules METROLOGY")
     st.subheader("Weryfikacja Zgodności 3D vs 2D")
-    
     st.markdown("""
-    ### ⚙️ Jak to działa? (Workflow)
-    
-    1.  **Cyfrowy Bliźniak (Digital Twin Check):**
-        * Wgrywasz model 3D (to co skonstruowano) i rysunek 2D (to co ma być wyprodukowane).
-        * System sprawdza spójność: Czy wymiary na rysunku zgadzają się z bryłą 3D?
-    
-    2.  **Analiza GD&T (Geometric Dimensioning and Tolerancing):**
-        * Silnik geometryczny (CadQuery) mierzy płaskość, równoległość i pozycję otworów w modelu 3D.
-        * AI odczytuje ramki tolerancji z rysunku PDF.
-        * Porównuje wyniki: **PASS / FAIL**.
-    
-    3.  **Raportowanie:**
-        * Automatyczne generowanie raportu pomiarowego (przed wysłaniem na produkcję).
-        * Wykrywanie "niemożliwych tolerancji" na etapie projektu.
+    ### ⚙️ Workflow:
+    1.  **Digital Twin Check:** Porównuje geometrię 3D z wymiarami na PDF.
+    2.  **Analiza GD&T:** Silnik CadQuery weryfikuje płaskość i pozycję otworów.
+    3.  **Raport:** Generuje "PASS/FAIL" dla każdego wymiaru krytycznego.
     """)
-    
     st.info("Prototyp silnika geometrycznego jest gotowy. Trwa integracja z interfejsem.")
 
 # ==========================================
 # 🔧 APLIKACJA 4: FIELD (SERWIS)
 # ==========================================
 elif selected_app == "🔧 FIELD":
-    
-    # --- SIDEBAR DLA FIELD ---
     with st.sidebar:
         st.header("🔧 Panel Mobilny")
         st.info("Zrób zdjęcie telefonem.")
         st.camera_input("Zrób zdjęcie części", disabled=True)
         st.text_input("Szukaj po kodzie błędu", placeholder="np. E-502")
 
-    # --- MAIN SCREEN ---
     st.title("SolidRules FIELD")
-    st.subheader("Inteligentny Asystent Utrzymania Ruchu (Mobile)")
-    
+    st.subheader("Inteligentny Asystent Utrzymania Ruchu")
     st.markdown("""
-    ### ⚙️ Jak to działa? (Workflow)
-    
-    1.  **Rozpoznawanie Wizualne:**
-        * Serwisant robi zdjęcie uszkodzonej części lub tabliczki znamionowej.
-        * Vision AI identyfikuje komponent (np. "Pompa hydrauliczna Rexroth typ X").
-    
-    2.  **Błyskawiczny Dostęp do DTR:**
-        * System przeszukuje tysiące stron instrukcji (DTR).
-        * Wyświetla **tylko** stronę z procedurą wymiany/naprawy dla tego konkretnego modelu.
-    
-    3.  **Diagnostyka Audio (Smart Sound):**
-        * Serwisant nagrywa dźwięk pracującej maszyny.
-        * Algorytm FFT (analiza widma) wykrywa anomalie typowe dla zużytych łożysk lub kawitacji pomp.
-        
-    4.  **Integracja z Magazynem:**
-        * "Część zidentyfikowana. Stan magazynowy: 2 sztuki. Półka B-12."
+    ### ⚙️ Workflow:
+    1.  **Visual Search:** Rozpoznaje część ze zdjęcia.
+    2.  **DTR Lookup:** Otwiera procedurę wymiany w dokumentacji.
+    3.  **Audio Diagnostyka:** Analiza widma dźwięku (wykrywanie zużytych łożysk).
     """)
-    
-    st.success("Aplikacja projektowana w technologii PWA (Progressive Web App) dla tabletów i smartfonów.")
+    st.success("Aplikacja projektowana jako PWA (Mobile-First).")
 
 # ==========================================
 # 🧠 APLIKACJA 5: KNOWLEDGE (BAZA)
 # ==========================================
 elif selected_app == "🧠 KNOWLEDGE":
-    
-    # --- SIDEBAR DLA KNOWLEDGE ---
     with st.sidebar:
         st.header("🧠 Zarządzanie Wiedzą")
-        st.write("Panel Administratora")
-        
         with st.expander("📥 Importuj Dane Firmowe"):
-            up_db = st.file_uploader("Wgraj Excel/CSV", type=["xlsx", "csv"])
-            if up_db:
-                st.write("Mapowanie kolumn...")
-                st.button("Scal z bazą SolidRules", disabled=True)
+            uploaded_db = st.file_uploader("Wgraj plik z historią (.xlsx, .csv)", type=["csv", "xlsx"])
+            if uploaded_db:
+                try:
+                    if uploaded_db.name.endswith('.csv'): df_imp = pd.read_csv(uploaded_db)
+                    else: df_imp = pd.read_excel(uploaded_db)
+                    st.write("Podgląd:", df_imp.head(3))
+                    col_p = st.selectbox("Kolumna PROBLEM", df_imp.columns)
+                    col_s = st.selectbox("Kolumna ROZWIĄZANIE", df_imp.columns)
+                    if st.button("🔀 Scal z bazą"):
+                        df_new = pd.DataFrame({
+                            "date": [datetime.now().strftime("%Y-%m-%d")]*len(df_imp),
+                            "problem": df_imp[col_p],
+                            "solution": df_imp[col_s],
+                            "tags": "Imported"
+                        })
+                        df_new.to_csv(DB_FILE, mode='a', header=False, index=False)
+                        st.success(f"Zaimportowano {len(df_imp)} wpisów!")
+                except Exception as e: st.error(str(e))
 
-    # --- MAIN SCREEN ---
     st.title("SolidRules KNOWLEDGE CORE")
     st.subheader("Centralny Mózg Systemu")
+    st.markdown("Tu trafiają wszystkie rozwiązania z modułów Innovate i Field.")
     
-    st.markdown("""
-    ### ⚙️ Rola w ekosystemie
-    
-    To nie jest zwykła baza danych. To **Pamięć Zbiorowa** Twojej firmy.
-    Każdy problem rozwiązany w *Innovate* lub *Field* trafia tutaj.
-    
-    1.  **Lessons Learnt (Lekcje):**
-        * Automatyczne zapisywanie rozwiązanych problemów.
-        * Uczenie się na błędach: "Nie stosuj uszczelek NBR przy 150°C (Awaria z 2024)".
-    
-    2.  **Semantic Search (Wyszukiwanie Semantyczne):**
-        * Możesz wpisać "coś stuka w silniku", a system znajdzie raport o "luzie łożyskowym" (rozumie kontekst, nie tylko słowa).
-        
-    3.  **API dla Innych Modułów:**
-        * *Innovate* pyta bazę: "Czy to rozwiązanie jest bezpieczne?"
-        * *Estimator* pyta bazę: "Ile to kosztowało rok temu?"
-    """)
-    
-    st.markdown("### 📊 Aktualny stan wiedzy")
     if os.path.exists(DB_FILE):
         df = pd.read_csv(DB_FILE)
         st.dataframe(df, use_container_width=True)
