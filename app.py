@@ -9,90 +9,80 @@ import hmac
 import pandas as pd
 import csv
 import time
+import json
 from datetime import datetime
 from openai import OpenAI
 from llama_parse import LlamaParse
 
-# --- NAPRAWA ASYNCIO (DLA JUPYTER/STREAMLIT CLOUD) ---
+# --- NAPRAWA ASYNCIO ---
 nest_asyncio.apply()
 
 # --- KONFIGURACJA STRONY ---
 st.set_page_config(page_title="SolidRules Ecosystem", page_icon="💠", layout="wide")
 
-# --- CSS (PRO DESIGN & TOP MENU) ---
+# --- CSS (PRO DESIGN) ---
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
         header {visibility: hidden;}
         .stApp { background-color: #050505; }
         
-        /* Pasek Boczny */
+        /* Sidebar */
         section[data-testid="stSidebar"] { 
             background-color: #0c0c0c; 
             border-right: 1px solid #1e1e1e; 
         }
         
-        /* GÓRNE MENU (Nawigacja) */
-        div[role="radiogroup"] {
-            display: flex;
-            justify-content: center;
+        /* Tabs (Zakładki) */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 10px;
             background-color: #0c0c0c;
             padding: 10px;
             border-radius: 12px;
             border: 1px solid #1e1e1e;
-            margin-bottom: 20px;
         }
-        div[role="radiogroup"] label {
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            white-space: pre-wrap;
             background-color: transparent;
             border: none;
             color: #94a3b8;
             font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 6px;
-            transition: all 0.2s;
-            margin: 0 5px;
         }
-        div[role="radiogroup"] label:hover {
-            color: white;
-            background-color: #1e1e2e;
-        }
-        /* Aktywna zakładka */
-        div[role="radiogroup"] label[data-checked="true"] {
-            background-color: #6366f1 !important;
-            color: white !important;
-            font-weight: 600;
-            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+        .stTabs [aria-selected="true"] {
+            background-color: #1e1e2e !important;
+            color: #6366f1 !important;
+            border-bottom: 2px solid #6366f1 !important;
         }
 
-        /* Elementy UI */
-        .stTextInput input, .stTextArea textarea {
+        /* UI Elements */
+        .stTextInput input, .stTextArea textarea, .stNumberInput input {
             background-color: #111111 !important; color: #e2e8f0 !important;
             border: 1px solid #333 !important; border-radius: 8px !important;
-        }
-        .stTextInput input:focus, .stTextArea textarea:focus {
-            border-color: #6366f1 !important; box-shadow: 0 0 0 1px #6366f1 !important;
         }
         div.stButton > button {
             background-color: #1e1e2e; color: white; border: 1px solid #333;
             border-radius: 8px; transition: all 0.3s ease;
         }
         div.stButton > button:hover {
-            background-color: #6366f1; border-color: #6366f1; color: white;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            background-color: #6366f1; border-color: #6366f1;
         }
         div.stButton > button[kind="primary"] {
             background: linear-gradient(to right, #4f46e5, #6366f1); border: none;
         }
-        h1, h2, h3 { color: #f8fafc !important; }
-        p, li, label, .stMarkdown { color: #94a3b8 !important; }
-        .stSuccess { background-color: #064e3b !important; color: #a7f3d0 !important; }
-        .stInfo { background-color: #1e293b !important; color: #94a3b8 !important; }
-        .stWarning { background-color: #451a03 !important; color: #fdba74 !important; }
-        hr { border-color: #333; }
         
-        /* Spinner */
-        .stSpinner > div { border-top-color: #6366f1 !important; }
+        /* Typography */
+        h1, h2, h3 { color: #f8fafc !important; }
+        p, li, label, .stMarkdown, .stCaption { color: #94a3b8 !important; }
+        
+        /* Alerts */
+        .stSuccess { background-color: #064e3b !important; color: #a7f3d0 !important; }
+        .stInfo { background-color: #172554 !important; color: #bfdbfe !important; }
+        .stWarning { background-color: #451a03 !important; color: #fdba74 !important; }
+        
+        /* JSON View */
+        .json-formatter-container { background-color: #111 !important; color: #eee !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -105,19 +95,17 @@ def check_password():
             del st.session_state["password"]
         else: st.session_state["password_correct"] = False
     if st.session_state["password_correct"]: return True
-    st.markdown("### 🔒 SolidRules Enterprise Access")
+    st.markdown("### 🔒 SolidRules Access")
     st.text_input("Access Code:", type="password", on_change=password_entered, key="password")
     return False
 
 if not check_password(): st.stop()
 
-# --- FUNKCJE BACKENDOWE (DB, OCR) ---
+# --- FUNKCJE BACKENDOWE ---
 DB_FILE = "lessons_learnt.csv"
-
 def init_db():
     if not os.path.exists(DB_FILE):
         pd.DataFrame(columns=["date", "problem", "solution", "tags"]).to_csv(DB_FILE, index=False)
-
 def search_lessons(query):
     if not os.path.exists(DB_FILE): return ""
     try:
@@ -129,34 +117,9 @@ def search_lessons(query):
                 matches.append(f"- [CASE: {row['date']}] {str(row['solution'])[:300]}...")
         return "\n".join(matches[:3]) if matches else ""
     except: return ""
-
-def save_lesson(problem, solution):
-    with open(DB_FILE, mode='a', newline='', encoding='utf-8') as file:
-        csv.writer(file).writerow([datetime.now().strftime("%Y-%m-%d"), problem, solution, "Auto-Save"])
-
 def parse_hybrid(file_bytes): 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-        tmp_file.write(file_bytes)
-        tmp_path = tmp_file.name
-    text_content = ""
-    # Próba LlamaParse (jeśli klucz jest)
-    ll_key = st.secrets.get("LLAMA_CLOUD_API_KEY", None)
-    if ll_key:
-        try:
-            parser = LlamaParse(api_key=ll_key, result_type="markdown", premium_mode=True, language="pl")
-            docs = parser.load_data(tmp_path)
-            if docs: text_content = "\n\n".join([d.text for d in docs])
-        except: pass
-    
-    # Fallback do PDFPlumber
-    if not text_content:
-        try:
-            with pdfplumber.open(tmp_path) as pdf:
-                for p in pdf.pages: text_content += (p.extract_text() or "") + "\n"
-        except: pass
-    os.remove(tmp_path)
-    return text_content, "Hybrid OCR"
-
+    # Mockup dla szybkości, normalnie tutaj byłby LlamaParse
+    return "Treść dokumentu wyekstrahowana z PDF...", "OCR Standard"
 def pdf_to_images_base64(file_bytes):
     images_base64 = []
     try:
@@ -170,236 +133,232 @@ def pdf_to_images_base64(file_bytes):
 init_db()
 
 # ==========================================
-# 🧭 TOP MENU (GÓRNA NAWIGACJA)
+# 🎛️ PRZEŁĄCZNIK WARIANTÓW (STRATEGIA)
 # ==========================================
-st.markdown("<div style='text-align: center; margin-bottom: 5px; color: #6366f1; font-size: 0.8em; letter-spacing: 2px;'>SOLIDRULES ECOSYSTEM v4.5</div>", unsafe_allow_html=True)
-
-selected_app = st.radio(
-    "Nawigacja",
-    ["🚀 INNOVATE", "💰 ESTIMATOR", "📐 METROLOGY", "🔧 FIELD", "🧠 KNOWLEDGE"],
-    horizontal=True,
-    label_visibility="collapsed"
-)
-
-st.markdown("---")
-
-# ==========================================
-# 🚀 APLIKACJA 1: INNOVATE (KONSTRUKCJA + WATCHDOG + MES)
-# ==========================================
-if selected_app == "🚀 INNOVATE":
-    
-    # --- SIDEBAR: KONTEKST + WATCHDOG ---
-    with st.sidebar:
-        st.header("🚀 Panel Konstruktora")
-        
-        # 1. WATCHDOG (STRAŻNIK LEGISLACYJNY)
-        st.markdown("### 🛡️ Watchdog Status")
-        watchdog_status = "OSTRZEŻENIE" 
-        
-        if watchdog_status == "OK":
-            st.success("✅ Normy Aktualne")
-        elif watchdog_status == "OSTRZEŻENIE":
-            st.warning("⚠️ Wykryto zmiany w prawie!")
-            with st.expander("Szczegóły alertu"):
-                st.write("**Dyrektywa Maszynowa:** Planowana rewizja art. 12 w Q4 2026.")
-                st.write("**Norma PN-EN ISO 12100:** Zalecana weryfikacja oceny ryzyka.")
-        
-        st.markdown("---")
-        
-        # 2. UPLOADER
-        st.info("Wgrywanie dokumentacji:")
-        uploaded_file = st.file_uploader("Rysunek / Norma / DTR (PDF)", type=["pdf"])
-        st.caption("Silnik: GPT-4o + Vision + Physics Engine")
-
-    # --- MAIN SCREEN ---
-    st.title("SolidRules INNOVATE")
-    st.caption("AI-Powered R&D: Rozwiązywanie problemów & Szybka Symulacja")
-
-    # Logika aplikacji Innovate
-    pdf_text = ""
-    pdf_imgs = []
-    has_file = False
-    
-    if uploaded_file:
-        has_file = True
-        with st.spinner("Analiza Vision AI..."):
-            file_bytes = uploaded_file.getvalue()
-            pdf_text, _ = parse_hybrid(file_bytes)
-            pdf_imgs = pdf_to_images_base64(file_bytes)
-        st.success(f"✅ Dokument wczytany ({len(pdf_imgs)} stron)")
-        
-        # --- PODGLĄD + INSTANT MES (NOWOŚĆ) ---
-        col_view, col_mes = st.columns([1, 1])
-        
-        with col_view:
-            st.markdown("**Podgląd oryginału:**")
-            if pdf_imgs:
-                st.image(base64.b64decode(pdf_imgs[0]), use_container_width=True)
-                
-        with col_mes:
-            st.markdown("**⚡ Instant MES (AI Prediction):**")
-            # Symulacja działania przycisku
-            if st.button("Uruchom Szybką Analizę Naprężeń (3s)"):
-                with st.spinner("AI przewiduje rozkład naprężeń (Heatmap)..."):
-                    time.sleep(2) # Symulacja myślenia
-                    # Placeholder heatmapy
-                    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fem_pole_c.jpg/640px-Fem_pole_c.jpg", 
-                             caption="Przewidywane Hotspoty (Czerwone = Ryzyko pęknięcia)",
-                             use_container_width=True)
-                    
-                    st.error("Wykryto spiętrzenie naprężeń w narożniku A! (Współczynnik K > 3.0).")
-                    st.markdown("💡 **Sugestia TRIZ:** Zastosuj zaokrąglenie progresywne lub zmień geometrię na eliptyczną.")
-            else:
-                st.info("Kliknij, aby nałożyć mapę naprężeń bez uruchamiania Ansysa/SolidWorksa.")
-
+with st.sidebar:
+    st.markdown("### 🏗️ Architektura Systemu")
+    variant = st.selectbox(
+        "Wybierz Koncepcję:",
+        ["WARIANT 1B: EngOps AI (Nowy)", "WARIANT 1A: Rodzina Aplikacji (Stary)"],
+        index=0
+    )
     st.markdown("---")
+
+# ==============================================================================
+# WARIANT 1B: ENGINEERING OPS AI (Cashflow First)
+# ==============================================================================
+if variant == "WARIANT 1B: EngOps AI (Nowy)":
     
-    # --- CZAT INŻYNIERSKI (TRIZ / LIBRARIAN) ---
-    problem = st.text_area("Opisz problem techniczny lub zadaj pytanie do norm:", height=100, placeholder="Np. Jak zredukować masę tego wspornika zachowując sztywność?")
+    # Header
+    c1, c2 = st.columns([0.8, 0.2])
+    with c1:
+        st.markdown("# 🏗️ Engineering Ops AI")
+        st.caption("System operacyjny dla firm technicznych | Data-Driven Approach")
+    with c2:
+        st.metric("Status Core", "ONLINE", delta_color="normal")
+
+    # GŁÓWNE ZAKŁADKI (STRATEGIA CASHFLOW FIRST)
+    tab_data, tab_quote, tab_field, tab_review, tab_core = st.tabs([
+        "1️⃣ DRAWING → DATA", 
+        "2️⃣ QUOTE → ORDER", 
+        "3️⃣ FIELD NOTES", 
+        "4️⃣ DESIGN REVIEW", 
+        "🧠 KNOWLEDGE CORE"
+    ])
+
+    # --- MODUŁ 1: DIGITALIZACJA (DRAWING -> DATA) ---
+    with tab_data:
+        st.markdown("### 📄 Automatyczna Digitalizacja Rysunków")
+        st.info("Zamieniamy 'martwe' PDF-y w dane JSON/CSV dla systemów ERP i CNC.")
+        
+        col_up, col_json = st.columns([1, 1])
+        with col_up:
+            uploaded_dwg = st.file_uploader("Wgraj Rysunek (PDF)", key="v1b_dwg")
+            if uploaded_dwg:
+                st.success("Plik przyjęty. Rozpoczynam ekstrakcję Vision AI...")
+                st.image("https://cdn-icons-png.flaticon.com/512/337/337946.png", width=50) # Placeholder
+                
+        with col_json:
+            st.markdown("**Wynik Ekstrakcji (Dane Strukturalne):**")
+            # Mockup danych JSON
+            mock_data = {
+                "part_name": "Wspornik_V2",
+                "material": "S355J2",
+                "quantity": 50,
+                "dimensions": {"L": 200, "W": 100, "H": 15},
+                "tolerances": ["H7", "+/- 0.1"],
+                "surface_treatment": "Ocynk ogniowy"
+            }
+            if uploaded_dwg:
+                st.json(mock_data)
+                st.download_button("📥 Pobierz JSON", json.dumps(mock_data), "data.json")
+                st.download_button("📥 Pobierz CSV", "part,mat,qty\nWspornik,S355,50", "data.csv")
+            else:
+                st.caption("Oczekiwanie na plik...")
+
+    # --- MODUŁ 2: OFERTOWANIE (QUOTE -> ORDER) ---
+    with tab_quote:
+        
+        st.markdown("### 💰 Inteligentne Ofertowanie (Cashflow Engine)")
+        
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown("**1. Wsad (BOM)**")
+            st.file_uploader("Wgraj Złożenie/BOM", key="v1b_quote")
+        with c2:
+            st.markdown("**2. Parametry Biznesowe**")
+            margin = st.slider("Marża (%)", 0, 100, 30)
+            hourly_rate = st.number_input("Stawka CNC (PLN/h)", value=150)
+        with c3:
+            st.markdown("**3. Wynik (Estymacja)**")
+            if st.button("Przelicz Ofertę"):
+                with st.spinner("Analiza geometrii i cen rynkowych..."):
+                    time.sleep(1)
+                    st.metric("Sugerowana Cena", "12 450 PLN", delta=f"Marża: {margin}%")
+                    st.progress(70, text="Prawdopodobieństwo wygrania oferty: Wysokie")
+
+        st.markdown("#### 📜 Historia Ofert (CRM)")
+        df_quotes = pd.DataFrame({
+            "Klient": ["TechCorp", "BuildPol", "AgroMech"],
+            "Projekt": ["Silos X", "Rama Y", "Wał Z"],
+            "Wartość": ["15k", "4k", "22k"],
+            "Status": ["Wysłana", "Akceptacja", "Odrzucona"]
+        })
+        st.dataframe(df_quotes, use_container_width=True)
+
+    # --- MODUŁ 3: WIEDZA Z TERENU (FIELD NOTES) ---
+    with tab_field:
+        st.markdown("### 🛠️ Field Notes AI (Zbieranie wiedzy z terenu)")
+        st.caption("Serwisant nie pisze raportów. On mówi do telefonu.")
+        
+        c_mob1, c_mob2 = st.columns([1, 2])
+        with c_mob1:
+            st.markdown("#### 📱 Interfejs Mobilny")
+            st.info("Nagraj notatkę głosową:")
+            st.audio(None) # Placeholder
+            st.camera_input("Zrób zdjęcie awarii")
+            
+        with c_mob2:
+            st.markdown("#### 🧠 AI Processing (Backend)")
+            st.markdown("""
+            **Transkrypcja:** *"Klient zgłasza wibracje pompy. Na moje oko to sprzęgło kłowe, guma jest sparciała."*
+            
+            **Strukturyzacja Danych:**
+            * **Problem:** Wibracje pompy
+            * **Przyczyna:** Zużycie sprzęgła (element elastyczny)
+            * **Tagi:** #Maintenance #Coupling #Vibration
+            * **Akcja:** Zamówić wkładkę sprzęgła typ B.
+            """)
+            st.button("Zapisz do Knowledge Core", type="primary")
+
+    # --- MODUŁ 4: AUDYT (DESIGN REVIEW) ---
+    with tab_review:
+        st.markdown("### 🔍 Design Review AI (Audyt Dokumentacji)")
+        st.info("Sprawdzamy spójność i błędy 'szkolne' przed wysłaniem na produkcję.")
+        
+        u_rev = st.file_uploader("Wgraj PDF do weryfikacji", key="v1b_rev")
+        
+        if u_rev:
+            col_l, col_r = st.columns(2)
+            with col_l:
+                st.markdown("**Znalezione Błędy (Checklist):**")
+                st.error("❌ Brak tolerancji ogólnej w tabelce.")
+                st.warning("⚠️ Gwint M20 oznaczony jako 'fi 20'.")
+                st.success("✅ Rzuty zgodne (Europejskie).")
+            with col_r:
+                st.markdown("**Zalecenia:**")
+                st.write("Dodać normę ISO 2768-mK. Poprawić oznaczenie gwintu.")
+
+    # --- MODUŁ 5: KNOWLEDGE CORE ---
+    with tab_core:
+        st.markdown("### 🧠 Knowledge Core (Fundament)")
+        st.write("Jedno źródło prawdy. Tu trafiają dane z ofert, serwisu i audytów.")
+        
+        query = st.text_input("Przeszukaj pamięć firmy (RAG):", placeholder="np. Dlaczego pękają wały w projekcie X?")
+        if query:
+            st.write(f"Szukam w wektorowej bazie danych dla: '{query}'...")
+            st.info("💡 Znaleziono 3 powiązane notatki z serwisu (Field Notes) i 1 odrzuconą ofertę.")
+
+
+# ==============================================================================
+# WARIANT 1A: RODZINA APLIKACJI (Oryginalna Koncepcja)
+# ==============================================================================
+elif variant == "WARIANT 1A: Rodzina Aplikacji (Stary)":
     
-    if st.button("Generuj Rozwiązanie (TRIZ & Safety)", type="primary"):
-        history = search_lessons(problem)
+    # --- STARY KOD (ZAWINIĘTY W BLOK) ---
+    st.markdown("<div style='text-align: center; margin-bottom: 5px; color: #666; font-size: 0.8em;'>SOLIDRULES ECOSYSTEM v4.5 (Legacy View)</div>", unsafe_allow_html=True)
+
+    selected_app = st.radio(
+        "Nawigacja",
+        ["🚀 INNOVATE", "💰 ESTIMATOR", "📐 METROLOGY", "🔧 FIELD", "🧠 KNOWLEDGE"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    st.markdown("---")
+
+    if selected_app == "🚀 INNOVATE":
+        with st.sidebar:
+            st.header("🚀 Panel Konstruktora")
+            st.markdown("### 🛡️ Watchdog Status")
+            st.warning("⚠️ Wykryto zmiany w prawie!")
+            uploaded_file = st.file_uploader("Rysunek / Norma / DTR (PDF)", type=["pdf"])
+
+        st.title("SolidRules INNOVATE")
+        st.caption("AI-Powered R&D: Rozwiązywanie problemów & Szybka Symulacja")
+
+        pdf_text = ""
+        pdf_imgs = []
+        has_file = False
         
-        # --- INTELIGENTNY SYSTEM PROMPT (BIBLIOTEKARZ vs TRIZ) ---
-        system_prompt = """Jesteś Głównym Inżynierem. Masz dwa tryby działania. Musisz SAM zdecydować, którego użyć.
+        if uploaded_file:
+            has_file = True
+            with st.spinner("Analiza Vision AI..."):
+                file_bytes = uploaded_file.getvalue()
+                pdf_text, _ = parse_hybrid(file_bytes)
+                pdf_imgs = pdf_to_images_base64(file_bytes)
+            st.success(f"✅ Dokument wczytany ({len(pdf_imgs)} stron)")
+            
+            c1, c2 = st.columns(2)
+            with c1: 
+                if pdf_imgs: st.image(base64.b64decode(pdf_imgs[0]), use_container_width=True)
+            with c2:
+                if st.button("Uruchom Instant MES"):
+                    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fem_pole_c.jpg/640px-Fem_pole_c.jpg", caption="Heatmap Naprężeń")
+                    st.error("Hotspot w narożniku A!")
 
-        TRYB 1: BIBLIOTEKARZ (Pytania o dane)
-        Kiedy użyć: Pytania typu "Ile wynosi X?", "Jaki skok?", "Co mówi norma?".
-        ZASADA: Podaj konkrety z tabeli/tekstu. Nie wymyślaj problemów.
-
-        TRYB 2: EKSPERT TRIZ (Rozwiązywanie problemów)
-        Kiedy użyć: Użytkownik zgłasza problem, awarię lub pyta "Jak poprawić?".
-        ZASADA (Chain of Thought):
-        1. DIAGNOZA.
-        2. TRIZ (Sprzeczność + Zasady).
-        3. KRYTYK (Ryzyko + Normy).
+        problem = st.text_area("Opisz problem techniczny:", height=100)
         
-        DODATKOWO: Masz dostęp do bazy 'Lessons Learnt' (Historia Firmy). Jeśli coś tam jest, wspomnij o tym.
-        """
-        
-        user_msg = f"PYTANIE: {problem}\n\nHISTORIA FIRMY:\n{history}"
-        if has_file: user_msg += f"\n\nDOKUMENTACJA (OCR):\n{pdf_text[:30000]}"
-        
-        content = [{"type": "text", "text": user_msg}]
-        if has_file and pdf_imgs:
-             for img in pdf_imgs[:3]: content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img}"}})
-        
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": content}
-        ]
-        
-        try:
-            client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-            with st.spinner("Analiza sprzeczności i generowanie raportu..."):
-                resp = client.chat.completions.create(model="gpt-4o", messages=messages)
-                ans = resp.choices[0].message.content
-                st.markdown("### 💡 Raport Ekspercki")
-                st.markdown(ans)
-                st.session_state['last_ans'] = ans
-                st.session_state['last_prob'] = problem
-        except Exception as e: st.error(str(e))
+        if st.button("Generuj Rozwiązanie (TRIZ)", type="primary"):
+            history = search_lessons(problem)
+            system_prompt = "Jesteś Głównym Inżynierem. Użyj TRIZ i historii firmy."
+            user_msg = f"PYTANIE: {problem}\n\nHISTORIA: {history}"
+            if has_file: user_msg += f"\n\nDOKUMENTY: {pdf_text[:10000]}"
+            
+            # Mockup odpowiedzi dla szybkości działania launchera
+            st.markdown("### 💡 Raport Ekspercki")
+            st.markdown(f"**Diagnoza:** Problem dotyczy '{problem}'.\n\n**TRIZ:** Zastosuj zasadę segmentacji.\n\n**Historia:** W 2024 mieliśmy podobny przypadek.")
+            
+            if st.button("Zapisz do Bazy"):
+                save_lesson(problem, "Rozwiązanie TRIZ...")
+                st.success("Zapisano!")
 
-    if 'last_ans' in st.session_state:
-        if st.button("📥 Zapisz do Bazy Wiedzy"):
-            save_lesson(st.session_state['last_prob'], st.session_state['last_ans'])
-            st.success("Zapisano!")
+    elif selected_app == "💰 ESTIMATOR":
+        st.title("💰 SolidRules ESTIMATOR")
+        st.info("Wariant 1A: Klasyczny kalkulator")
+        st.write("Wersja w Wariancie 1B jest znacznie bardziej rozbudowana (Quote -> Order).")
 
-# ==========================================
-# 💰 APLIKACJA 2: ESTIMATOR (WYCENY)
-# ==========================================
-elif selected_app == "💰 ESTIMATOR":
-    with st.sidebar:
-        st.header("💰 Panel Kosztorysanta")
-        st.info("Wgraj rysunek złożeniowy, aby wygenerować BOM.")
-        st.file_uploader("Wgraj Rysunek Złożeniowy (PDF)", disabled=True)
-        st.markdown("---")
-        st.metric("Kurs Euro", "4.32 PLN")
-        st.metric("Cena Stali (S235)", "4.50 PLN/kg")
+    elif selected_app == "📐 METROLOGY":
+        st.title("📐 SolidRules METROLOGY")
+        st.write("Porównywanie 3D (STL) vs 2D (PDF).")
+        st.file_uploader("Model 3D", disabled=True)
+        st.file_uploader("Rysunek 2D", disabled=True)
 
-    st.title("SolidRules ESTIMATOR")
-    st.subheader("Automatyzacja Ofertowania")
-    st.markdown("""
-    ### ⚙️ Workflow:
-    1.  **Vision AI (BOM):** Skanuje tabelę rysunkową i wyciąga listę części.
-    2.  **Kalkulator:** Rozpoznaje materiały i liczy wagę netto.
-    3.  **Shape Complexity:** Algorytm ocenia złożoność obróbki (Liczba operacji CNC).
-    """)
-    st.info("Moduł w fazie R&D. Przewidywane wdrożenie: Q3 2026.")
-    st.image("https://cdn-icons-png.flaticon.com/512/4011/4011166.png", width=100)
+    elif selected_app == "🔧 FIELD":
+        st.title("🔧 SolidRules FIELD")
+        st.write("Wersja mobilna dla utrzymania ruchu.")
+        st.camera_input("Zdjęcie")
 
-# ==========================================
-# 📐 APLIKACJA 3: METROLOGY (JAKOŚĆ)
-# ==========================================
-elif selected_app == "📐 METROLOGY":
-    with st.sidebar:
-        st.header("📐 Panel Kontroli Jakości")
-        st.file_uploader("1. Wgraj Model 3D (.STL/.STEP)", disabled=True)
-        st.file_uploader("2. Wgraj Rysunek 2D (.PDF)", disabled=True)
-        st.checkbox("Analiza GD&T", value=True, disabled=True)
-
-    st.title("SolidRules METROLOGY")
-    st.subheader("Weryfikacja Zgodności 3D vs 2D")
-    st.markdown("""
-    ### ⚙️ Workflow:
-    1.  **Digital Twin Check:** Porównuje geometrię 3D z wymiarami na PDF.
-    2.  **Analiza GD&T:** Silnik CadQuery weryfikuje płaskość i pozycję otworów.
-    3.  **Raport:** Generuje "PASS/FAIL" dla każdego wymiaru krytycznego.
-    """)
-    st.info("Prototyp silnika geometrycznego jest gotowy. Trwa integracja z interfejsem.")
-
-# ==========================================
-# 🔧 APLIKACJA 4: FIELD (SERWIS)
-# ==========================================
-elif selected_app == "🔧 FIELD":
-    with st.sidebar:
-        st.header("🔧 Panel Mobilny")
-        st.info("Zrób zdjęcie telefonem.")
-        st.camera_input("Zrób zdjęcie części", disabled=True)
-        st.text_input("Szukaj po kodzie błędu", placeholder="np. E-502")
-
-    st.title("SolidRules FIELD")
-    st.subheader("Inteligentny Asystent Utrzymania Ruchu")
-    st.markdown("""
-    ### ⚙️ Workflow:
-    1.  **Visual Search:** Rozpoznaje część ze zdjęcia.
-    2.  **DTR Lookup:** Otwiera procedurę wymiany w dokumentacji.
-    3.  **Audio Diagnostyka:** Analiza widma dźwięku (wykrywanie zużytych łożysk).
-    """)
-    st.success("Aplikacja projektowana jako PWA (Mobile-First).")
-
-# ==========================================
-# 🧠 APLIKACJA 5: KNOWLEDGE (BAZA)
-# ==========================================
-elif selected_app == "🧠 KNOWLEDGE":
-    with st.sidebar:
-        st.header("🧠 Zarządzanie Wiedzą")
-        with st.expander("📥 Importuj Dane Firmowe"):
-            uploaded_db = st.file_uploader("Wgraj plik z historią (.xlsx, .csv)", type=["csv", "xlsx"])
-            if uploaded_db:
-                try:
-                    if uploaded_db.name.endswith('.csv'): df_imp = pd.read_csv(uploaded_db)
-                    else: df_imp = pd.read_excel(uploaded_db)
-                    st.write("Podgląd:", df_imp.head(3))
-                    col_p = st.selectbox("Kolumna PROBLEM", df_imp.columns)
-                    col_s = st.selectbox("Kolumna ROZWIĄZANIE", df_imp.columns)
-                    if st.button("🔀 Scal z bazą"):
-                        df_new = pd.DataFrame({
-                            "date": [datetime.now().strftime("%Y-%m-%d")]*len(df_imp),
-                            "problem": df_imp[col_p],
-                            "solution": df_imp[col_s],
-                            "tags": "Imported"
-                        })
-                        df_new.to_csv(DB_FILE, mode='a', header=False, index=False)
-                        st.success(f"Zaimportowano {len(df_imp)} wpisów!")
-                except Exception as e: st.error(str(e))
-
-    st.title("SolidRules KNOWLEDGE CORE")
-    st.subheader("Centralny Mózg Systemu")
-    st.markdown("Tu trafiają wszystkie rozwiązania z modułów Innovate i Field.")
-    
-    if os.path.exists(DB_FILE):
-        df = pd.read_csv(DB_FILE)
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.warning("Baza wiedzy jest pusta.")
+    elif selected_app == "🧠 KNOWLEDGE":
+        st.title("🧠 Centralna Baza Wiedzy")
+        if os.path.exists(DB_FILE):
+            st.dataframe(pd.read_csv(DB_FILE))
