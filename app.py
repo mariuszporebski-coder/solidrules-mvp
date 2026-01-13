@@ -18,40 +18,53 @@ nest_asyncio.apply()
 # --- KONFIGURACJA STRONY ---
 st.set_page_config(page_title="SolidRules Ecosystem", page_icon="💠", layout="wide")
 
-# --- CSS (PRO DESIGN) ---
+# --- CSS (PRO DESIGN & TOP MENU) ---
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
         html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
         header {visibility: hidden;}
         .stApp { background-color: #050505; }
-        section[data-testid="stSidebar"] { background-color: #0c0c0c; border-right: 1px solid #1e1e1e; }
         
-        /* Stylizacja Nawigacji (Radio Buttony jako Menu) */
-        .stRadio > div { gap: 10px; }
-        .stRadio label {
-            background-color: #1a1a1a;
-            padding: 10px 15px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            color: #ccc;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.2s;
+        /* Pasek Boczny */
+        section[data-testid="stSidebar"] { 
+            background-color: #0c0c0c; 
+            border-right: 1px solid #1e1e1e; 
         }
-        .stRadio label:hover {
-            border-color: #6366f1;
+        
+        /* GÓRNE MENU (Nawigacja) */
+        div[role="radiogroup"] {
+            display: flex;
+            justify-content: center;
+            background-color: #0c0c0c;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid #1e1e1e;
+            margin-bottom: 20px;
+        }
+        div[role="radiogroup"] label {
+            background-color: transparent;
+            border: none;
+            color: #94a3b8;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            margin: 0 5px;
+        }
+        div[role="radiogroup"] label:hover {
             color: white;
             background-color: #1e1e2e;
         }
+        /* Aktywna zakładka */
         div[role="radiogroup"] label[data-checked="true"] {
             background-color: #6366f1 !important;
             color: white !important;
-            border-color: #6366f1 !important;
             font-weight: 600;
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
         }
 
-        /* Reszta styli */
+        /* Elementy UI */
         .stTextInput input, .stTextArea textarea {
             background-color: #111111 !important; color: #e2e8f0 !important;
             border: 1px solid #333 !important; border-radius: 8px !important;
@@ -67,6 +80,7 @@ st.markdown("""
         p, li, label, .stMarkdown { color: #94a3b8 !important; }
         .stSuccess { background-color: #064e3b !important; color: #a7f3d0 !important; }
         .stInfo { background-color: #1e293b !important; color: #94a3b8 !important; }
+        hr { border-color: #333; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -85,7 +99,7 @@ def check_password():
 
 if not check_password(): st.stop()
 
-# --- FUNKCJE POMOCNICZE (DB, OCR) ---
+# --- FUNKCJE BACKENDOWE (DB, OCR) ---
 DB_FILE = "lessons_learnt.csv"
 def init_db():
     if not os.path.exists(DB_FILE):
@@ -104,7 +118,7 @@ def search_lessons(query):
 def save_lesson(problem, solution):
     with open(DB_FILE, mode='a', newline='', encoding='utf-8') as file:
         csv.writer(file).writerow([datetime.now().strftime("%Y-%m-%d"), problem, solution, "Auto-Save"])
-def parse_hybrid(file_bytes): # Uproszczona wersja dla czytelności launchera
+def parse_hybrid(file_bytes): 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         tmp_file.write(file_bytes)
         tmp_path = tmp_file.name
@@ -128,39 +142,38 @@ def pdf_to_images_base64(file_bytes):
 init_db()
 
 # ==========================================
-# 🧭 NAWIGACJA (SIDEBAR MENU)
+# 🧭 TOP MENU (GÓRNA NAWIGACJA)
 # ==========================================
-with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=60)
-    st.markdown("### SolidRules Ecosystem")
-    
-    # TO JEST MENU DLA WSPÓLNIKÓW
-    selected_module = st.radio(
-        "Wybierz Aplikację:",
-        [
-            "🚀 INNOVATE (Konstrukcja)", 
-            "💰 ESTIMATOR (Wyceny)", 
-            "📐 METROLOGY (Jakość)", 
-            "🔧 FIELD (Serwis)",
-            "🧠 KNOWLEDGE (Baza)"
-        ],
-        index=0 # Domyślnie startujemy z Innovate
-    )
-    
-    st.markdown("---")
-    st.caption(f"Zalogowano jako: Admin\nSesja aktywna.")
+# Używamy columns, żeby wyśrodkować menu, lub po prostu radio na górze
+st.markdown("<div style='text-align: center; margin-bottom: 5px; color: #6366f1; font-size: 0.8em; letter-spacing: 2px;'>SOLIDRULES ECOSYSTEM</div>", unsafe_allow_html=True)
+
+selected_app = st.radio(
+    "Nawigacja",
+    ["🚀 INNOVATE", "💰 ESTIMATOR", "📐 METROLOGY", "🔧 FIELD", "🧠 KNOWLEDGE"],
+    horizontal=True,
+    label_visibility="collapsed"
+)
+
+st.markdown("---") # Oddzielenie menu od treści
 
 # ==========================================
-# 🧠 MODUŁ 1: INNOVATE (TWÓJ GŁÓWNY KOD)
+# 🚀 APLIKACJA 1: INNOVATE (KONSTRUKCJA)
 # ==========================================
-if selected_module == "🚀 INNOVATE (Konstrukcja)":
-    st.title("🚀 SolidRules INNOVATE")
-    st.caption("AI-Powered R&D & Problem Solving")
+if selected_app == "🚀 INNOVATE":
     
-    # --- UPLOADER W GLOWNYM OKNIE DLA TEGO MODULU ---
-    with st.expander("📂 Kontekst: Wgraj Dokumentację (PDF)", expanded=True):
-        uploaded_file = st.file_uploader("Rysunek / Norma / DTR", type=["pdf"])
-    
+    # --- SIDEBAR DLA INNOVATE ---
+    with st.sidebar:
+        st.header("🚀 Panel Konstruktora")
+        st.info("Tutaj wgrywasz dokumentację, którą chcesz przeanalizować.")
+        uploaded_file = st.file_uploader("Wgraj Rysunek / Normę (PDF)", type=["pdf"])
+        st.markdown("---")
+        st.caption("Silnik: GPT-4o + TRIZ")
+
+    # --- MAIN SCREEN ---
+    st.title("SolidRules INNOVATE")
+    st.caption("Asystent R&D: Rozwiązywanie problemów, TRIZ i Weryfikacja Norm")
+
+    # Logika aplikacji Innovate
     pdf_text = ""
     pdf_imgs = []
     has_file = False
@@ -171,13 +184,13 @@ if selected_module == "🚀 INNOVATE (Konstrukcja)":
             file_bytes = uploaded_file.getvalue()
             pdf_text, _ = parse_hybrid(file_bytes)
             pdf_imgs = pdf_to_images_base64(file_bytes)
-        st.success(f"Wczytano dokument ({len(pdf_imgs)} stron)")
+        st.success(f"✅ Dokument wczytany ({len(pdf_imgs)} stron)")
         
-    problem = st.text_area("Opisz problem inżynierski lub zadaj pytanie:", height=120)
+    problem = st.text_area("Opisz problem techniczny:", height=150, placeholder="Np. Element pęka przy 50 barach. Jak to wzmocnić bez zwiększania masy?")
     
-    if st.button("Generuj Rozwiązanie (TRIZ)", type="primary"):
+    if st.button("Generuj Rozwiązanie", type="primary"):
         history = search_lessons(problem)
-        messages = [{"role": "system", "content": "Jesteś Głównym Inżynierem. Użyj wiedzy ogólnej, wgranego pliku oraz bazy 'Lessons Learnt', aby rozwiązać problem."}]
+        messages = [{"role": "system", "content": "Jesteś Głównym Inżynierem. Jeśli pytanie jest proste, odpowiedz krótko. Jeśli to problem, użyj TRIZ."}]
         
         user_msg = f"PYTANIE: {problem}\n\nHISTORIA FIRMY:\n{history}"
         if has_file: user_msg += f"\n\nDOKUMENTACJA:\n{pdf_text[:20000]}"
@@ -190,7 +203,7 @@ if selected_module == "🚀 INNOVATE (Konstrukcja)":
         
         try:
             client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-            with st.spinner("Analiza sprzeczności i generowanie raportu..."):
+            with st.spinner("Analiza..."):
                 resp = client.chat.completions.create(model="gpt-4o", messages=messages)
                 ans = resp.choices[0].message.content
                 st.markdown("### 💡 Raport Ekspercki")
@@ -205,84 +218,163 @@ if selected_module == "🚀 INNOVATE (Konstrukcja)":
             st.success("Zapisano!")
 
 # ==========================================
-# 💰 MODUŁ 2: ESTIMATOR (MOCKUP / WIZJA)
+# 💰 APLIKACJA 2: ESTIMATOR (WYCENY)
 # ==========================================
-elif selected_module == "💰 ESTIMATOR (Wyceny)":
-    st.title("💰 SolidRules ESTIMATOR")
-    st.info("🚧 Moduł w trakcie wdrażania (Roadmapa Q3 2026)")
+elif selected_app == "💰 ESTIMATOR":
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### Co to robi?")
-        st.markdown("""
-        Automatyczny inżynier sprzedaży.
-        1. **Wgrywasz PDF** (Rysunek złożeniowy).
-        2. **Vision AI** skanuje tabelę części (BOM).
-        3. System automatycznie:
-           * Rozpoznaje materiały.
-           * Liczy wagę netto.
-           * Szacuje czas obróbki na podstawie geometrii.
-           * Generuje Excela z wyceną.
-        """)
-        st.button("Pobierz przykładową wycenę (Demo)", disabled=True)
-    
-    with col2:
-        st.image("https://cdn-icons-png.flaticon.com/512/2942/2942544.png", width=150, caption="Engine: Pandas + Pricing API")
+    # --- SIDEBAR DLA ESTIMATOR ---
+    with st.sidebar:
+        st.header("💰 Panel Kosztorysanta")
+        st.info("Wgraj rysunek złożeniowy, aby wygenerować BOM.")
+        st.file_uploader("Wgraj Rysunek Złożeniowy (PDF)", disabled=True)
+        st.markdown("---")
+        st.metric("Kurs Euro", "4.32 PLN")
+        st.metric("Cena Stali (S235)", "4.50 PLN/kg")
 
-# ==========================================
-# 📐 MODUŁ 3: METROLOGY (MOCKUP / WIZJA)
-# ==========================================
-elif selected_module == "📐 METROLOGY (Jakość)":
-    st.title("📐 SolidRules METROLOGY")
-    st.info("🚧 Moduł w trakcie wdrażania (Roadmapa Q4 2026)")
-    
-    st.markdown("### Cyfrowa Kontrola Jakości")
-    st.write("Porównywanie modeli 3D z dokumentacją 2D w czasie rzeczywistym.")
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        st.file_uploader("1. Wgraj Model 3D (.STL / .STEP)", disabled=True)
-    with c2:
-        st.file_uploader("2. Wgraj Rysunek (.PDF)", disabled=True)
-        
-    st.warning("Silnik geometryczny (CadQuery) jest obecnie konfigurowany na serwerze GPU.")
-
-# ==========================================
-# 🔧 MODUŁ 4: FIELD (MOCKUP / WIZJA)
-# ==========================================
-elif selected_module == "🔧 FIELD (Serwis)":
-    st.title("🔧 SolidRules FIELD (Mobile)")
-    st.success("📱 Dostępne w wersji mobilnej (PWA)")
+    # --- MAIN SCREEN ---
+    st.title("SolidRules ESTIMATOR")
+    st.subheader("Automatyzacja Ofertowania i Kalkulacji Kosztów")
     
     st.markdown("""
-    **Asystent Serwisanta.**
-    Zrób zdjęcie uszkodzonej części telefonem, a system:
-    1. Rozpozna element.
-    2. Znajdzie procedurę wymiany w DTR.
-    3. Sprawdzi stan magazynowy części zamiennych.
+    ### ⚙️ Jak to działa? (Workflow)
+    
+    1.  **Ekstrakcja BOM (Bill of Materials):**
+        * Vision AI skanuje rysunek techniczny.
+        * Lokalizuje tabelę rysunkową.
+        * Wyciąga listę części, materiały i ilości do ustrukturyzowanej tabeli.
+    
+    2.  **Kalkulator Materiałowy:**
+        * System rozpoznaje gatunki materiałów (np. 1.4301, S355).
+        * Oblicza objętość detalu na podstawie wymiarów gabarytowych.
+        * Mnoży przez gęstość materiału i aktualną cenę rynkową.
+    
+    3.  **Szacowanie "Shape Complexity":**
+        * Algorytm analizuje geometrię 2D.
+        * Dużo wymiarów tolerowanych i rzutów? -> **Wysoka złożoność (Droga obróbka).**
+        * Prosty kształt z palnika? -> **Niska złożoność (Tania obróbka).**
+        
+    4.  **Wynik:**
+        * Gotowy plik Excel / PDF z ofertą dla klienta.
     """)
-    st.text_input("Szukaj po kodzie błędu maszyny:", placeholder="np. ERROR 504")
-    st.button("🔍 Szukaj w DTR")
+    
+    st.info("Moduł w fazie R&D. Przewidywane wdrożenie: Q3 2026.")
+    st.image("https://cdn-icons-png.flaticon.com/512/4011/4011166.png", width=100)
 
 # ==========================================
-# 🧠 MODUŁ 5: KNOWLEDGE (BAZA DANYCH)
+# 📐 APLIKACJA 3: METROLOGY (JAKOŚĆ)
 # ==========================================
-elif selected_module == "🧠 KNOWLEDGE (Baza)":
-    st.title("🧠 Centralna Baza Wiedzy")
+elif selected_app == "📐 METROLOGY":
     
-    st.markdown("Tu zarządzasz pamięcią wszystkich aplikacji.")
+    # --- SIDEBAR DLA METROLOGY ---
+    with st.sidebar:
+        st.header("📐 Panel Kontroli Jakości")
+        st.file_uploader("1. Wgraj Model 3D (.STL/.STEP)", disabled=True)
+        st.file_uploader("2. Wgraj Rysunek 2D (.PDF)", disabled=True)
+        st.markdown("---")
+        st.checkbox("Analiza GD&T", value=True, disabled=True)
+        st.checkbox("Analiza Kolizji", value=False, disabled=True)
+
+    # --- MAIN SCREEN ---
+    st.title("SolidRules METROLOGY")
+    st.subheader("Weryfikacja Zgodności 3D vs 2D")
     
-    tab1, tab2 = st.tabs(["Przeglądaj Bazę", "Importuj Dane"])
+    st.markdown("""
+    ### ⚙️ Jak to działa? (Workflow)
     
-    with tab1:
-        if os.path.exists(DB_FILE):
-            df = pd.read_csv(DB_FILE)
-            st.metric("Liczba lekcji w systemie", len(df))
-            st.dataframe(df, use_container_width=True)
-        else:
-            st.warning("Baza pusta.")
-            
-    with tab2:
-        st.write("Import z Excela firmowego:")
-        st.file_uploader("Wgraj plik .xlsx", key="db_upload")
-        st.button("Scal z systemem SolidRules", disabled=True)
+    1.  **Cyfrowy Bliźniak (Digital Twin Check):**
+        * Wgrywasz model 3D (to co skonstruowano) i rysunek 2D (to co ma być wyprodukowane).
+        * System sprawdza spójność: Czy wymiary na rysunku zgadzają się z bryłą 3D?
+    
+    2.  **Analiza GD&T (Geometric Dimensioning and Tolerancing):**
+        * Silnik geometryczny (CadQuery) mierzy płaskość, równoległość i pozycję otworów w modelu 3D.
+        * AI odczytuje ramki tolerancji z rysunku PDF.
+        * Porównuje wyniki: **PASS / FAIL**.
+    
+    3.  **Raportowanie:**
+        * Automatyczne generowanie raportu pomiarowego (przed wysłaniem na produkcję).
+        * Wykrywanie "niemożliwych tolerancji" na etapie projektu.
+    """)
+    
+    st.info("Prototyp silnika geometrycznego jest gotowy. Trwa integracja z interfejsem.")
+
+# ==========================================
+# 🔧 APLIKACJA 4: FIELD (SERWIS)
+# ==========================================
+elif selected_app == "🔧 FIELD":
+    
+    # --- SIDEBAR DLA FIELD ---
+    with st.sidebar:
+        st.header("🔧 Panel Mobilny")
+        st.info("Zrób zdjęcie telefonem.")
+        st.camera_input("Zrób zdjęcie części", disabled=True)
+        st.text_input("Szukaj po kodzie błędu", placeholder="np. E-502")
+
+    # --- MAIN SCREEN ---
+    st.title("SolidRules FIELD")
+    st.subheader("Inteligentny Asystent Utrzymania Ruchu (Mobile)")
+    
+    st.markdown("""
+    ### ⚙️ Jak to działa? (Workflow)
+    
+    1.  **Rozpoznawanie Wizualne:**
+        * Serwisant robi zdjęcie uszkodzonej części lub tabliczki znamionowej.
+        * Vision AI identyfikuje komponent (np. "Pompa hydrauliczna Rexroth typ X").
+    
+    2.  **Błyskawiczny Dostęp do DTR:**
+        * System przeszukuje tysiące stron instrukcji (DTR).
+        * Wyświetla **tylko** stronę z procedurą wymiany/naprawy dla tego konkretnego modelu.
+    
+    3.  **Diagnostyka Audio (Smart Sound):**
+        * Serwisant nagrywa dźwięk pracującej maszyny.
+        * Algorytm FFT (analiza widma) wykrywa anomalie typowe dla zużytych łożysk lub kawitacji pomp.
+        
+    4.  **Integracja z Magazynem:**
+        * "Część zidentyfikowana. Stan magazynowy: 2 sztuki. Półka B-12."
+    """)
+    
+    st.success("Aplikacja projektowana w technologii PWA (Progressive Web App) dla tabletów i smartfonów.")
+
+# ==========================================
+# 🧠 APLIKACJA 5: KNOWLEDGE (BAZA)
+# ==========================================
+elif selected_app == "🧠 KNOWLEDGE":
+    
+    # --- SIDEBAR DLA KNOWLEDGE ---
+    with st.sidebar:
+        st.header("🧠 Zarządzanie Wiedzą")
+        st.write("Panel Administratora")
+        
+        with st.expander("📥 Importuj Dane Firmowe"):
+            up_db = st.file_uploader("Wgraj Excel/CSV", type=["xlsx", "csv"])
+            if up_db:
+                st.write("Mapowanie kolumn...")
+                st.button("Scal z bazą SolidRules", disabled=True)
+
+    # --- MAIN SCREEN ---
+    st.title("SolidRules KNOWLEDGE CORE")
+    st.subheader("Centralny Mózg Systemu")
+    
+    st.markdown("""
+    ### ⚙️ Rola w ekosystemie
+    
+    To nie jest zwykła baza danych. To **Pamięć Zbiorowa** Twojej firmy.
+    Każdy problem rozwiązany w *Innovate* lub *Field* trafia tutaj.
+    
+    1.  **Lessons Learnt (Lekcje):**
+        * Automatyczne zapisywanie rozwiązanych problemów.
+        * Uczenie się na błędach: "Nie stosuj uszczelek NBR przy 150°C (Awaria z 2024)".
+    
+    2.  **Semantic Search (Wyszukiwanie Semantyczne):**
+        * Możesz wpisać "coś stuka w silniku", a system znajdzie raport o "luzie łożyskowym" (rozumie kontekst, nie tylko słowa).
+        
+    3.  **API dla Innych Modułów:**
+        * *Innovate* pyta bazę: "Czy to rozwiązanie jest bezpieczne?"
+        * *Estimator* pyta bazę: "Ile to kosztowało rok temu?"
+    """)
+    
+    st.markdown("### 📊 Aktualny stan wiedzy")
+    if os.path.exists(DB_FILE):
+        df = pd.read_csv(DB_FILE)
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.warning("Baza wiedzy jest pusta.")
