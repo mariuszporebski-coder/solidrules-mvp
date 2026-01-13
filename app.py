@@ -31,16 +31,18 @@ st.markdown("""
         
         section[data-testid="stSidebar"] { background-color: #0c0c0c; border-right: 1px solid #1e1e1e; }
         
-        /* Stylizacja Kart Agentów (Wariant 1C) */
-        .agent-card {
+        /* Stylizacja 1D: Confidence Scores */
+        .score-green { color: #10b981; font-weight: bold; }
+        .score-yellow { color: #f59e0b; font-weight: bold; }
+        .score-red { color: #ef4444; font-weight: bold; }
+        
+        .review-card {
             background-color: #111;
             border: 1px solid #333;
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 15px;
             margin-bottom: 10px;
         }
-        .agent-active { border-color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
-        .agent-warning { border-color: #f59e0b; }
         
         /* UI Elements */
         .stTextInput input, .stTextArea textarea, .stNumberInput input {
@@ -63,6 +65,7 @@ st.markdown("""
         .stSuccess { background-color: #064e3b !important; color: #a7f3d0 !important; }
         .stInfo { background-color: #172554 !important; color: #bfdbfe !important; }
         .stWarning { background-color: #451a03 !important; color: #fdba74 !important; }
+        .stError { background-color: #450a0a !important; color: #fecaca !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -82,16 +85,13 @@ def check_password():
 if not check_password(): st.stop()
 
 # --- FUNKCJE MOCKUP ---
-def mock_agent_thinking(text):
-    with st.status(text, expanded=True) as status:
-        time.sleep(1)
-        st.write("🔍 Skanowanie załączników...")
-        time.sleep(0.5)
-        st.write("🧠 Ekstrakcja danych (Vision AI)...")
-        time.sleep(0.5)
-        st.write("💰 Sprawdzanie cen stali (API Albeco)...")
-        time.sleep(0.5)
-        status.update(label="Gotowe!", state="complete", expanded=False)
+def render_confidence(score):
+    if score >= 90:
+        return f'<span class="score-green">● High ({score}%)</span>'
+    elif score >= 70:
+        return f'<span class="score-yellow">● Medium ({score}%)</span>'
+    else:
+        return f'<span class="score-red">● Low ({score}%)</span>'
 
 # ==========================================
 # 🎛️ WYBÓR STRATEGII
@@ -101,6 +101,7 @@ with st.sidebar:
     variant = st.selectbox(
         "Wybierz Koncepcję:",
         [
+            "WARIANT 1D: FLOW (Controlled Autonomy)",
             "WARIANT 1C: AUTONOMY (Turbo Pivot)",
             "WARIANT 1B: EngOps AI (Proces)",
             "WARIANT 1A: Rodzina Aplikacji (Narzędzia)"
@@ -109,124 +110,106 @@ with st.sidebar:
     )
     st.markdown("---")
     
-    if variant == "WARIANT 1C: AUTONOMY (Turbo Pivot)":
-        st.markdown("**Status Agentów:**")
-        st.success("🟢 Email Watcher: Active")
-        st.success("🟢 Supply Radar: Active")
-        st.warning("🟠 Design Critic: Learning")
+    if "1D" in variant:
+        st.markdown("**📊 Risk Monitor:**")
+        st.metric("Oczekujące Projekty", "3")
+        st.metric("Wymaga Twojej uwagi", "1", delta="Low Confidence", delta_color="inverse")
 
 # ==============================================================================
-# WARIANT 1C: SOLIDRULES AUTONOMY (Agentic AI)
+# WARIANT 1D: SOLIDRULES FLOW (Controlled Autonomy)
 # ==============================================================================
-if variant == "WARIANT 1C: AUTONOMY (Turbo Pivot)":
+if variant == "WARIANT 1D: FLOW (Controlled Autonomy)":
     
-    st.markdown("# 🤖 SolidRules AUTONOMY")
-    st.caption("Human-in-the-loop Engineering | AI wykonuje pracę, Ty zatwierdzasz.")
+    st.markdown("# 🏗️ SolidRules FLOW")
+    st.caption("AI pracuje (80%), Ty decydujesz (20%) | Human-in-the-loop Feature.")
     
-    # PULPIT STEROWNICZY (INBOX)
-    st.markdown("### 📥 Skrzynka Odbiorcza Agentów (Action Required)")
+    # 1. INTAKE (EMAIL TO WORKSPACE)
+    st.markdown("### 📥 Projekty Robocze (Drafts)")
     
-    col_inbox, col_preview = st.columns([1, 1.5])
+    col_list, col_work = st.columns([1, 2])
     
-    with col_inbox:
-        # Lista Zadań (To wygląda jak klient poczty, ale dla AI)
+    with col_list:
+        st.markdown("**Ostatnie Zgłoszenia (Email/Upload):**")
         with st.container(border=True):
-            st.markdown("**Nowe Zgłoszenia (3)**")
+            if st.button("📄 TechCorp: Wałek Fi50 (Email)", use_container_width=True):
+                st.session_state['flow_task'] = 'techcorp'
+            st.caption("Status: 🟢 AI pewne (95%)")
             
-            # Zadanie 1
-            if st.button("🔴 PILNE: Oferta dla TechCorp (50 szt. Wałek)", key="task1", use_container_width=True):
-                st.session_state['active_task'] = 1
+            st.markdown("---")
             
-            # Zadanie 2
-            if st.button("🟠 WERYFIKACJA: Rysunek błędny (Brak tolerancji)", key="task2", use_container_width=True):
-                st.session_state['active_task'] = 2
-                
-            # Zadanie 3
-            if st.button("🟢 GOTOWE: Faktura od Dostawcy Stali", key="task3", use_container_width=True):
-                st.session_state['active_task'] = 3
-
-    with col_preview:
-        active_task = st.session_state.get('active_task', 1)
+            if st.button("📄 AgroMech: Rama Spawana (Email)", use_container_width=True):
+                st.session_state['flow_task'] = 'agromech'
+            st.caption("Status: 🔴 AI niepewne (45%) - Wymaga Korekty")
+            
+    # 2. WORKBENCH (HUMAN CONTROL PANEL)
+    with col_work:
+        task = st.session_state.get('flow_task', None)
         
-        # SCENARIUSZ 1: AI ZROBIŁO WYCENĘ SAMO
-        if active_task == 1:
-            st.markdown("#### 🤖 Agent: Sales_Bot_v4")
-            st.info("Odebrałem maila od `jan.kowalski@techcorp.pl`. Przeanalizowałem PDF. Sprawdziłem magazyn. Przygotowałem draft oferty.")
+        if task == 'techcorp':
+            st.info("✅ Ten projekt wygląda dobrze. AI ma wysoką pewność.")
+            st.markdown("#### Podgląd Wyceny Automatycznej")
+            df = pd.DataFrame({
+                "Część": ["Wałek Fi50 L200", "Podkładka"],
+                "Materiał": ["S355", "Mosiądz"],
+                "Cena/szt": ["45.00 PLN", "2.50 PLN"],
+                "Pewność AI": ["98%", "99%"]
+            })
+            st.dataframe(df, use_container_width=True)
+            if st.button("Zatwierdź i Wyślij Ofertę", type="primary"):
+                st.success("Wysłano!")
+        
+        elif task == 'agromech':
+            st.warning("⚠️ AI zgłasza wyjątki. Sprawdź czerwone pola.")
             
-            with st.expander("📄 Podgląd PDF od klienta", expanded=False):
-                st.write("[Rysunek_Walek_Fi50.pdf]")
+            st.markdown("#### 🔧 Korekta Parametrów")
             
-            st.markdown("**--- DRAFT ODPOWIEDZI ---**")
-            email_draft = st.text_area("Treść maila do wysłania:", 
-                                       value="Dzień dobry Panie Janie,\nDziękujemy za zapytanie. Wyceniliśmy detal 'Wałek Fi50' wg rysunku 2024-B.\n\nCena: 45,00 PLN netto/szt.\nTermin: 7 dni roboczych (Materiał dostępny od ręki).\n\nPozdrawiam,\nSolidRules AI",
-                                       height=150)
+            with st.container(border=True):
+                c1, c2, c3 = st.columns([2, 1, 1])
+                with c1: 
+                    st.markdown("**1. Materiał** (Wykryto z rysunku)")
+                    st.markdown("AI odczytało: `Stal Nierdzewna 304`")
+                with c2:
+                    st.markdown(render_confidence(45), unsafe_allow_html=True)
+                with c3:
+                    # Human Override
+                    new_mat = st.selectbox("Korekta człowieka:", ["Zatwierdź (304)", "Zmień na 316L", "Zmień na S235"], index=1)
             
-            c1, c2, c3 = st.columns(3)
-            with c1: st.metric("Marża", "32%", "Bezpieczna")
-            with c2: st.metric("Ryzyko", "Niskie")
-            with c3: 
-                if st.button("✅ Wyślij Ofertę", type="primary"):
-                    st.toast("Oferta wysłana do klienta!")
-                    st.balloons()
-            
-        # SCENARIUSZ 2: AI ZNALAZŁO BŁĄD I PYTA CZŁOWIEKA
-        elif active_task == 2:
-            st.markdown("#### 🤖 Agent: Quality_Guardian")
-            st.error("STOP! Znalazłem problem krytyczny w dokumentacji od `BuildPol`.")
-            
-            st.markdown("""
-            **Zdiagnozowany problem:**
-            Na rysunku `Rama_Spawana.pdf` w widoku B brakuje tolerancji dla otworu pasowanego pod łożysko.
-            Norma ISO 2768-mK nie precyzuje tego wymiaru.
-            """)
-            
-            st.markdown("**Sugerowana Akcja:**")
-            action = st.radio("Co mam zrobić?", ["Odesłać maila z prośbą o poprawkę", "Przyjąć H7 (Ryzykowne)", "Przekazać do Technologa"])
-            
-            if st.button("Wykonaj Akcję"):
-                st.success(f"Agent wykonuje: {action}")
+            with st.container(border=True):
+                c1, c2, c3 = st.columns([2, 1, 1])
+                with c1: 
+                    st.markdown("**2. Operacje**")
+                    st.markdown("AI sugeruje: `Laser + Gięcie`")
+                with c2:
+                    st.markdown(render_confidence(92), unsafe_allow_html=True)
+                with c3:
+                    st.write("✅ OK")
 
-        elif active_task == 3:
-            st.success("Faktura zarchiwizowana. Ceny stali zaktualizowane w systemie Estimator.")
+            st.markdown("---")
+            col_dec1, col_dec2 = st.columns(2)
+            with col_dec1:
+                st.markdown("**Estymacja:** 12 500 PLN")
+            with col_dec2:
+                if st.button("Zatwierdź korekty i Generuj PDF"):
+                    st.success("Zapisano! System nauczył się, że dla AgroMech używamy 316L.")
 
     st.markdown("---")
-    
-    # WIZUALIZACJA PROCESU W TLE
-    st.markdown("### 🧠 Co dzieje się w tle? (Live Log)")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("**📨 Email Watcher**")
-        st.code("11:42: Otrzymano PDF.\n11:42: OCR Start.\n11:43: Klasyfikacja: ZAPYTANIE.", language="bash")
-    with c2:
-        st.markdown("**🕸️ Supply Radar**")
-        st.code("11:40: Ping Albeco API...\n11:40: Stal 1.4301 +2% (vs wczoraj).\n11:41: Aktualizacja cennika.", language="bash")
-    with c3:
-        st.markdown("**🛡️ Norm Watchdog**")
-        st.code("11:00: Skan ISO.org...\n11:00: Brak zmian krytycznych.\n11:05: System bezpieczny.", language="bash")
+    with st.expander("🧠 Knowledge Loop (Co się dzieje pod spodem?)"):
+        st.write("Twoja korekta (zmiana materiału na 316L) została zapisana.")
+        st.write("Następnym razem AI dla klienta 'AgroMech' zasugeruje 316L z pewnością 90%.")
 
 
 # ==============================================================================
-# WARIANT 1B: ENGINEERING OPS AI (Poprzedni)
+# POZOSTAŁE WARIANTY (DLA PORÓWNANIA)
 # ==============================================================================
+elif variant == "WARIANT 1C: AUTONOMY (Turbo Pivot)":
+    st.markdown("# 🤖 SolidRules AUTONOMY")
+    st.info("Tu AI robi wszystko samo. Wysokie ryzyko, wysoki zysk. (Dla odważnych)")
+    st.button("Włącz Autopilota", disabled=True)
+
 elif variant == "WARIANT 1B: EngOps AI (Proces)":
     st.markdown("# 🏗️ Engineering Ops AI")
-    st.caption("Procesowe podejście do danych.")
-    tab1, tab2, tab3 = st.tabs(["DRAWING → DATA", "QUOTE → ORDER", "KNOWLEDGE CORE"])
-    
-    with tab1:
-        st.info("Tutaj jest ten 'lepszy Excel' do digitalizacji.")
-        st.file_uploader("Wgraj PDF")
-        st.json({"part": "Shaft", "qty": 10})
-        
-    with tab2:
-        st.info("Kalkulator ofert.")
-        st.metric("Cena", "100 PLN")
+    st.info("Procesowe podejście: Upload -> Quote -> Order.")
 
-# ==============================================================================
-# WARIANT 1A: RODZINA APLIKACJI (Stary)
-# ==============================================================================
 elif variant == "WARIANT 1A: Rodzina Aplikacji (Narzędzia)":
     st.markdown("# 💠 Rodzina Aplikacji")
-    st.caption("Zestaw narzędzi dla inżynierów.")
-    st.radio("Wybierz moduł:", ["Innovate", "Metrology", "Field"], horizontal=True)
-    st.info("To jest Twoja pierwotna koncepcja (Toolbox).")
+    st.info("Zestaw narzędzi (Toolbox) dla inżynierów.")
