@@ -17,18 +17,24 @@ from llama_parse import LlamaParse
 # --- NAPRAWA ASYNCIO ---
 nest_asyncio.apply()
 
-# --- KONFIGURACJA STRONY ---
-st.set_page_config(page_title="SolidRules Enterprise", page_icon="💠", layout="wide")
+# --- KONFIGURACJA STRONY (ZMIANA: WYMUSZENIE OTWARTEGO PASKA) ---
+st.set_page_config(
+    page_title="SolidRules Enterprise", 
+    page_icon="💠", 
+    layout="wide",
+    initial_sidebar_state="expanded"  # <--- TO NAPRAWIA PROBLEM ZNIKAJĄCEGO PASKA
+)
 
-# --- CSS (PRO DESIGN) ---
+# --- CSS (PRO DESIGN - NAPRAWIONY NAGŁÓWEK) ---
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-        header {visibility: hidden;}
+        
+        /* USUNĄŁEM UKRYWANIE HEADER, ŻEBYŚ WIDZIAŁ PRZYCISKI STERUJĄCE */
         .stApp { background-color: #050505; }
         
-        /* Sidebar */
+        /* Sidebar styling */
         section[data-testid="stSidebar"] { 
             background-color: #0c0c0c; 
             border-right: 1px solid #1e1e1e; 
@@ -88,15 +94,6 @@ st.markdown("""
         .stSuccess { background-color: #064e3b !important; color: #a7f3d0 !important; border: 1px solid #059669; }
         .stInfo { background-color: #172554 !important; color: #bfdbfe !important; border: 1px solid #2563eb; }
         .stWarning { background-color: #451a03 !important; color: #fdba74 !important; border: 1px solid #d97706; }
-        
-        /* Karty Strategii */
-        .strategy-card {
-            background-color: #111;
-            border: 1px solid #333;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -123,7 +120,6 @@ def init_db():
         pd.DataFrame(columns=["date", "problem", "solution", "tags"]).to_csv(DB_FILE, index=False)
 
 def search_lessons(query):
-    """Przeszukuje bazę wiedzy (CSV)"""
     if not os.path.exists(DB_FILE): return ""
     try:
         df = pd.read_csv(DB_FILE)
@@ -140,12 +136,10 @@ def save_lesson(problem, solution):
         csv.writer(file).writerow([datetime.now().strftime("%Y-%m-%d"), problem, solution, "Auto-Save"])
 
 def parse_hybrid(file_bytes): 
-    """Logika OCR: LlamaParse (Premium) -> PDFPlumber (Fallback)"""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         tmp_file.write(file_bytes)
         tmp_path = tmp_file.name
     text_content = ""
-    # 1. Próba LlamaParse
     ll_key = st.secrets.get("LLAMA_CLOUD_API_KEY", None)
     if ll_key:
         try:
@@ -153,8 +147,6 @@ def parse_hybrid(file_bytes):
             docs = parser.load_data(tmp_path)
             if docs: text_content = "\n\n".join([d.text for d in docs])
         except: pass
-    
-    # 2. Fallback PDFPlumber
     if not text_content:
         try:
             with pdfplumber.open(tmp_path) as pdf:
@@ -164,7 +156,6 @@ def parse_hybrid(file_bytes):
     return text_content, "Hybrid OCR"
 
 def pdf_to_images_base64(file_bytes):
-    """Konwersja stron PDF na obrazy dla Vision AI"""
     images_base64 = []
     try:
         doc = fitz.open(stream=file_bytes, filetype="pdf")
@@ -195,7 +186,7 @@ st.markdown("---")
 # ==============================================================================
 if selected_module == "🚀 INNOVATE":
     
-    # --- SIDEBAR ---
+    # --- SIDEBAR (Musi być widoczny!) ---
     with st.sidebar:
         st.header("🚀 Panel Konstruktora")
         st.info("💡 **Cel:** Rozwiązywanie problemów inżynierskich, analiza norm i generowanie koncepcji.")
@@ -210,7 +201,6 @@ if selected_module == "🚀 INNOVATE":
     st.title("SolidRules INNOVATE")
     st.caption("Wirtualny Główny Inżynier (R&D Copilot)")
 
-    # Logika aplikacji Innovate
     pdf_text = ""
     pdf_imgs = []
     has_file = False
@@ -223,7 +213,6 @@ if selected_module == "🚀 INNOVATE":
             pdf_imgs = pdf_to_images_base64(file_bytes)
         st.success(f"✅ Dokument wczytany ({len(pdf_imgs)} stron)")
         
-        # Podgląd + Instant MES Mockup
         col1, col2 = st.columns(2)
         with col1:
              with st.expander("📄 Podgląd dokumentu", expanded=True):
@@ -236,7 +225,6 @@ if selected_module == "🚀 INNOVATE":
                     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fem_pole_c.jpg/640px-Fem_pole_c.jpg", caption="AI Stress Prediction")
                     st.error("Wykryto hotspot w strefie A (Współczynnik K > 2.5). Zalecane zaokrąglenie.")
 
-    # Czat
     st.markdown("### 💬 Konsultacja Inżynierska")
     problem = st.text_area("Opisz problem techniczny lub zadaj pytanie:", height=100, placeholder="Np. Jak uszczelnić ten wał przy 200 stopniach Celsjusza?")
     
@@ -247,7 +235,6 @@ if selected_module == "🚀 INNOVATE":
             system_prompt = """Jesteś Głównym Inżynierem. Masz dwa tryby:
             1. BIBLIOTEKARZ: Jeśli pytanie dotyczy danych z pliku -> podaj fakty.
             2. EKSPERT TRIZ: Jeśli to problem techniczny -> Przeprowadź analizę (Diagnoza -> Sprzeczność -> Koncepcje -> Ryzyko).
-            
             Wspomnij o podobnych przypadkach z Historii Firmy, jeśli są dostępne."""
             
             user_msg = f"PYTANIE: {problem}\n\nHISTORIA FIRMY:\n{history}"
@@ -264,7 +251,6 @@ if selected_module == "🚀 INNOVATE":
                     {"role": "user", "content": content}
                 ])
                 ans = resp.choices[0].message.content
-                
                 st.markdown("### 💡 Raport Ekspercki")
                 st.markdown(ans)
                 st.session_state['last_ans'] = ans
@@ -277,7 +263,7 @@ if selected_module == "🚀 INNOVATE":
             st.success("Zapisano!")
 
 # ==============================================================================
-# MODUŁ 2: ESTIMATOR (MOCKUP + OPIS)
+# MODUŁ 2: ESTIMATOR
 # ==============================================================================
 elif selected_module == "💰 ESTIMATOR":
     with st.sidebar:
@@ -290,39 +276,22 @@ elif selected_module == "💰 ESTIMATOR":
 
     st.title("SolidRules ESTIMATOR")
     st.subheader("Moduł Ofertowania i Kalkulacji Kosztów")
-    
     st.markdown("""
     ### ⚙️ Jak to działa? (Architektura Procesu)
-    
-    Moduł ten rozwiązuje problem ręcznego przepisywania danych z PDF do Excela.
-    
-    1.  **Ekstrakcja Tabelaryczna (Vision AI):**
-        * Algorytm lokalizuje na rysunku tabelę BOM (Bill of Materials).
-        * OCR konwertuje obraz tabeli na ustrukturyzowane dane (CSV).
-    
-    2.  **Inteligentny Cennik (Python Logic):**
-        * System mapuje nazwy materiałów (np. "St3s" -> "S235") na aktualne ceny rynkowe z API dostawców.
-        * Oblicza masę surowca (brutto) uwzględniając naddatki na cięcie.
-    
-    3.  **Shape Complexity Index (SCI):**
-        * AI analizuje geometrię 2D detalu.
-        * Liczy krawędzie, otwory i tolerancje.
-        * Estymuje czas maszynowy (np. "Dużo otworów gwintowanych -> Dodaj 15 min na CNC").
-        
-    4.  **Generowanie Oferty:**
-        * Wypluwa gotowy plik PDF z ofertą dla klienta, uwzględniając marżę zdefiniowaną przez handlowca.
+    1.  **Ekstrakcja Tabelaryczna (Vision AI):** Algorytm lokalizuje BOM i konwertuje na dane.
+    2.  **Inteligentny Cennik:** Mapuje materiały na ceny rynkowe.
+    3.  **Shape Complexity Index (SCI):** Estymuje czas maszynowy CNC.
+    4.  **Generowanie Oferty:** Tworzy gotowy PDF dla klienta.
     """)
-    
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("**Wizualizacja Procesu:**")
         st.image("https://cdn-icons-png.flaticon.com/512/2942/2942544.png", width=100, caption="PDF -> Data -> Price")
     with col2:
         st.warning("⚠️ Status: Wersja Beta planowana na Q3 2026.")
         st.button("Pobierz przykładowy raport wyceny (Demo)", disabled=True)
 
 # ==============================================================================
-# MODUŁ 3: METROLOGY (MOCKUP + OPIS)
+# MODUŁ 3: METROLOGY
 # ==============================================================================
 elif selected_module == "📐 METROLOGY":
     with st.sidebar:
@@ -333,29 +302,16 @@ elif selected_module == "📐 METROLOGY":
 
     st.title("SolidRules METROLOGY")
     st.subheader("Cyfrowa Kontrola Jakości (Digital Twin Check)")
-    
     st.markdown("""
-    ### ⚙️ Jak to działa? (Architektura Procesu)
-    
-    Moduł służy do automatycznego wykrywania błędów przed wysłaniem zlecenia na produkcję.
-    
-    1.  **Analiza Geometrii 3D (Math Engine):**
-        * Silnik (oparty na bibliotece `trimesh` / `CadQuery`) analizuje plik bryłowy.
-        * Mierzy rzeczywiste gabaryty, płaskość powierzchni i rozstaw otworów w modelu.
-    
-    2.  **Analiza Rysunku 2D (Vision AI):**
-        * AI odczytuje wymiary nominalne i tolerancje (np. "50 +/- 0.1") z pliku PDF.
-        * Rozpoznaje symbole GD&T (równoległość, prostopadłość).
-    
-    3.  **Cross-Check (Porównanie):**
-        * System nakłada dane 2D na 3D.
-        * Generuje alert, jeśli model 3D (narysowany przez konstruktora) nie mieści się w tolerancjach opisanych na rysunku.
+    ### ⚙️ Jak to działa?
+    1.  **Analiza Geometrii 3D:** Silnik mierzy bryłę.
+    2.  **Analiza Rysunku 2D:** AI odczytuje tolerancje.
+    3.  **Cross-Check:** Porównuje nominal z rzeczywistością.
     """)
-    
-    st.info("✅ Status: Silnik matematyczny gotowy. Trwa praca nad interfejsem użytkownika.")
+    st.info("✅ Status: Silnik matematyczny gotowy. Trwa praca nad UI.")
 
 # ==============================================================================
-# MODUŁ 4: FIELD (MOCKUP + OPIS)
+# MODUŁ 4: FIELD
 # ==============================================================================
 elif selected_module == "🔧 FIELD":
     with st.sidebar:
@@ -365,35 +321,22 @@ elif selected_module == "🔧 FIELD":
         st.text_input("Kod błędu maszyny:", placeholder="ERROR-500")
 
     st.title("SolidRules FIELD")
-    st.subheader("Asystent Utrzymania Ruchu (Maintenance AI)")
-    
+    st.subheader("Asystent Utrzymania Ruchu")
     st.markdown("""
-    ### ⚙️ Jak to działa? (Architektura Procesu)
-    
-    Aplikacja typu PWA (Progressive Web App) dla pracowników terenowych.
-    
-    1.  **Visual Search (Rozpoznawanie Obrazu):**
-        * Serwisant robi zdjęcie uszkodzonej części (nawet brudnej/zardzewiałej).
-        * Sieć neuronowa identyfikuje komponent (np. "Pompa zębata Bosch Rexroth").
-    
-    2.  **Inteligentne DTR (Semantic Search):**
-        * Zamiast szukać w 500 stronach PDF, system wyświetla **konkretną stronę** z procedurą wymiany uszczelnienia dla tego modelu.
-    
-    3.  **Pętla Zwrotna (Feedback Loop):**
-        * Notatka głosowa serwisanta ("Znowu pękło sprzęgło") jest transkrybowana i trafia do Bazy Wiedzy.
-        * Konstruktor w module INNOVATE widzi to zgłoszenie przy projektowaniu nowej wersji maszyny.
+    ### ⚙️ Jak to działa?
+    1.  **Visual Search:** Rozpoznawanie części ze zdjęcia.
+    2.  **Inteligentne DTR:** Wyszukiwanie procedur naprawczych.
+    3.  **Pętla Zwrotna:** Zgłoszenia z terenu trafiają do inżynierów.
     """)
-    
-    st.warning("⚠️ Status: Faza prototypowania interfejsu mobilnego.")
+    st.warning("⚠️ Status: Faza prototypowania.")
 
 # ==============================================================================
-# MODUŁ 5: KNOWLEDGE (DZIAŁAJĄCY IMPORTER)
+# MODUŁ 5: KNOWLEDGE
 # ==============================================================================
 elif selected_module == "🧠 KNOWLEDGE":
     with st.sidebar:
         st.header("🧠 Panel Administratora")
         st.info("Zarządzanie pamięcią systemu (Lessons Learnt).")
-        
         with st.expander("📥 Importuj z Excela/CSV"):
             up = st.file_uploader("Wgraj plik", type=["csv", "xlsx"])
             if up:
@@ -413,8 +356,6 @@ elif selected_module == "🧠 KNOWLEDGE":
 
     st.title("SolidRules KNOWLEDGE CORE")
     st.subheader("Centralny Mózg Systemu")
-    st.markdown("Baza wiedzy zasilająca wszystkie pozostałe aplikacje (RAG - Retrieval Augmented Generation).")
-    
     if os.path.exists(DB_FILE):
         df = pd.read_csv(DB_FILE)
         st.metric("Liczba zgromadzonych rozwiązań", len(df))
@@ -423,11 +364,10 @@ elif selected_module == "🧠 KNOWLEDGE":
         st.warning("Baza wiedzy jest pusta.")
 
 # ==============================================================================
-# 📈 STRATEGIA & ROADMAP (PREZENTACJA DLA ZARZĄDU)
+# 📈 STRATEGIA & ROADMAP
 # ==============================================================================
 elif selected_module == "📈 STRATEGY & ROADMAP":
     
-    # --- NAPRAWA ZNIKAJĄCEGO SIDEBARA ---
     with st.sidebar:
         st.header("📈 Centrum Dowodzenia")
         st.info("Zarządzanie wizją i kierunkiem rozwoju produktu.")
@@ -437,7 +377,6 @@ elif selected_module == "📈 STRATEGY & ROADMAP":
     st.markdown("# 🗺️ Strategia Rozwoju Produktu")
     st.caption("Ewolucja od prostych narzędzi do autonomicznego systemu operacyjnego.")
     
-    # Zakładki z wariantami
     tab1a, tab1b, tab1c, tab1d, tab1e = st.tabs([
         "1A: TOOLBOX", 
         "1B: PROCESS", 
@@ -446,81 +385,28 @@ elif selected_module == "📈 STRATEGY & ROADMAP":
         "1E: EVOLVE"
     ])
     
-    # --- WARIANT 1A ---
+    # TREŚCI ZAKŁADEK STRATEGII (SKRÓCONE DLA CZYTELNOŚCI KODU, ALE TREŚCIWE W DISPLAYU)
     with tab1a:
         st.header("Wariant 1A: Rodzina Aplikacji (Toolbox)")
         st.info("ℹ️ **Status:** Obecny Prototyp")
-        st.markdown("""
-        **Filozofia:** Zestaw luźnych narzędzi (Kalkulatorów) dla inżynierów.
-        
-        * **Co to jest:** Innovate, Metrology, Field jako osobne 'kioski'.
-        * **Zaleta:** Łatwe do zbudowania i wdrożenia.
-        * **Wada:** Brak przepływu danych. Handlowiec musi ręcznie przepisywać to, co wyliczył konstruktor.
-        * **Werdykt:** Dobry start, ale nie buduje trwałej przewagi konkurencyjnej.
-        """)
-        
-    # --- WARIANT 1B ---
+        st.markdown("**Filozofia:** Zestaw luźnych narzędzi (Kalkulatorów) dla inżynierów. Dobry start, ale słabe skalowanie.")
     with tab1b:
         st.header("Wariant 1B: Engineering Ops (Proces)")
-        st.info("ℹ️ **Status:** Koncepcja Procesowa (Data-First)")
-        st.markdown("""
-        **Filozofia:** Cyfryzacja obecnych procesów (Lepszy Excel).
-        
-        * **Co to jest:** Skupienie na przepływie: Rysunek -> Dane -> Oferta -> Zamówienie.
-        * **Zaleta:** Rozwiązuje palący problem (ofertowanie).
-        * **Wada:** Konkuruje z tanimi systemami ERP i darmowymi Excelami. Łatwe do skopiowania.
-        * **Werdykt:** Konieczny etap, ale zbyt nudny, by zdobyć rynek "szturmem".
-        """)
-
-    # --- WARIANT 1C ---
+        st.info("ℹ️ **Status:** Koncepcja Procesowa")
+        st.markdown("**Filozofia:** Cyfryzacja obecnych procesów. 'Lepszy Excel'. Konieczny etap, ale mało innowacyjny.")
     with tab1c:
         st.header("Wariant 1C: Autonomy (Agenci AI)")
-        st.info("ℹ️ **Status:** Wizja Futurystyczna (Ryzykowna)")
-        st.markdown("""
-        **Filozofia:** AI robi wszystko. Człowiek tylko patrzy.
-        
-        * **Co to jest:** Boty same odbierają maile, same wyceniają i same zamawiają towar.
-        * **Zaleta:** Zerowy koszt operacyjny (gdy działa).
-        * **Wada:** Zerowe zaufanie klientów. Ryzyko, że bot zamówi 100 ton stali przez pomyłkę.
-        * **Werdykt:** Zbyt wcześnie na taką rewolucję w przemyśle.
-        """)
-
-    # --- WARIANT 1D ---
+        st.info("ℹ️ **Status:** Wizja Futurystyczna")
+        st.markdown("**Filozofia:** AI robi wszystko. Człowiek tylko patrzy. Zbyt duże ryzyko na start.")
     with tab1d:
         st.header("⭐ Wariant 1D: SolidRules FLOW (Controlled Autonomy)")
         st.success("✅ **Status:** REKOMENDOWANA STRATEGIA")
-        
-        c1, c2 = st.columns([2, 1])
-        with c1:
-            st.markdown("""
-            **Filozofia:** AI wykonuje 80% pracy, Człowiek podejmuje 20% kluczowych decyzji.
-            
-            **Kluczowe Funkcje (Unikalna Wartość):**
-            1.  **Confidence Scoring:** System nie udaje, że wie wszystko. Oznacza kolorem (🟢/🔴) elementy, których nie jest pewien.
-            2.  **Management by Exception:** Człowiek nie klika w każdy projekt. Ingeruje tylko tam, gdzie AI zgłasza wątpliwości.
-            3.  **Human-in-the-Loop Learning:** Każda korekta człowieka (np. zmiana materiału) doucza system na przyszłość.
-            
-            **Dlaczego to kupią?**
-            Bo to daje im szybkość AI, ale pozostawia **kontrolę** w rękach inżynierów.
-            """)
-        with c2:
-            st.markdown("""
-            **Struktura Produktu:**
-            * **Intake:** Email/PDF -> Draft
-            * **Engine:** Wycena + Ryzyko
-            * **Control:** Panel Operatora
-            """)
-
-    # --- WARIANT 1E ---
+        st.markdown("""
+        **Filozofia:** AI wykonuje 80% pracy, Człowiek podejmuje 20% kluczowych decyzji.
+        **Kluczowe:** Confidence Scoring (AI ocenia swoją pewność), Zarządzanie Wyjątkami.
+        **Dlaczego to kupią?** Szybkość AI + Kontrola Inżyniera.
+        """)
     with tab1e:
         st.header("Wariant 1E: SolidRules EVOLVE (Optymalizacja)")
         st.info("ℹ️ **Status:** Cel na 2-3 lata")
-        st.markdown("""
-        **Filozofia:** System przestaje być narzędziem, a staje się Dyrektorem Operacyjnym.
-        
-        * **Dynamic Pricing:** System podnosi marże, gdy produkcja jest zapchana (Load Balancing).
-        * **Churn Prediction:** Wykrywa klientów, którzy przestali zamawiać.
-        * **Self-Correction:** Porównuje wyceny z rzeczywistym kosztem produkcji (zaciągniętym z ERP) i sam poprawia swoje algorytmy.
-        
-        **Werdykt:** To jest moment, w którym firma staje się "Unicornem".
-        """)
+        st.markdown("**Filozofia:** System staje się Dyrektorem Operacyjnym. Dynamiczne ceny, przewidywanie odejścia klientów, samodoskonalenie algorytmów.")
