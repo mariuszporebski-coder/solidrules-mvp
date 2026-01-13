@@ -403,7 +403,6 @@ elif selected_module == "🧠 KNOWLEDGE":
                     col_p = st.selectbox("Kolumna PROBLEM", df_new.columns)
                     col_s = st.selectbox("Kolumna ROZWIĄZANIE", df_new.columns)
                     if st.button("Scal z bazą"):
-                        # Prosta logika scalania
                         rows = []
                         for _, row in df_new.iterrows():
                             rows.append([datetime.now().strftime("%Y-%m-%d"), row[col_p], row[col_s], "Import"])
@@ -428,6 +427,13 @@ elif selected_module == "🧠 KNOWLEDGE":
 # ==============================================================================
 elif selected_module == "📈 STRATEGY & ROADMAP":
     
+    # --- NAPRAWA ZNIKAJĄCEGO SIDEBARA ---
+    with st.sidebar:
+        st.header("📈 Centrum Dowodzenia")
+        st.info("Zarządzanie wizją i kierunkiem rozwoju produktu.")
+        st.markdown("---")
+        st.caption("Wybierz zakładkę po prawej, aby poznać szczegóły.")
+    
     st.markdown("# 🗺️ Strategia Rozwoju Produktu")
     st.caption("Ewolucja od prostych narzędzi do autonomicznego systemu operacyjnego.")
     
@@ -448,7 +454,7 @@ elif selected_module == "📈 STRATEGY & ROADMAP":
         **Filozofia:** Zestaw luźnych narzędzi (Kalkulatorów) dla inżynierów.
         
         * **Co to jest:** Innovate, Metrology, Field jako osobne 'kioski'.
-        * **Zaleta:** Łatwe do zbudowania.
+        * **Zaleta:** Łatwe do zbudowania i wdrożenia.
         * **Wada:** Brak przepływu danych. Handlowiec musi ręcznie przepisywać to, co wyliczył konstruktor.
         * **Werdykt:** Dobry start, ale nie buduje trwałej przewagi konkurencyjnej.
         """)
@@ -456,7 +462,7 @@ elif selected_module == "📈 STRATEGY & ROADMAP":
     # --- WARIANT 1B ---
     with tab1b:
         st.header("Wariant 1B: Engineering Ops (Proces)")
-        st.info("ℹ️ **Status:** Sugestia Specjalistów (Tradycyjna)")
+        st.info("ℹ️ **Status:** Koncepcja Procesowa (Data-First)")
         st.markdown("""
         **Filozofia:** Cyfryzacja obecnych procesów (Lepszy Excel).
         
@@ -482,7 +488,7 @@ elif selected_module == "📈 STRATEGY & ROADMAP":
     # --- WARIANT 1D ---
     with tab1d:
         st.header("⭐ Wariant 1D: SolidRules FLOW (Controlled Autonomy)")
-        st.success("✅ **Status:** REKOMENDOWANA STRATEGIA WEJŚCIA NA RYNEK")
+        st.success("✅ **Status:** REKOMENDOWANA STRATEGIA")
         
         c1, c2 = st.columns([2, 1])
         with c1:
