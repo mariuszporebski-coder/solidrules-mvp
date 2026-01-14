@@ -19,13 +19,13 @@ nest_asyncio.apply()
 
 # --- KONFIGURACJA STRONY ---
 st.set_page_config(
-    page_title="SolidRules Enterprise", 
+    page_title="SolidRules Enterprise Platform", 
     page_icon="💠", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- CSS (PRO DESIGN) ---
+# --- CSS (ULTIMATE PRO DESIGN) ---
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
@@ -71,15 +71,23 @@ st.markdown("""
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
 
-        /* INFO BOX STYLING */
+        /* EXPANDER STYLING (TECH SPECS) */
         .streamlit-expanderHeader {
-            background-color: #1e1e2e;
+            background-color: #111827;
+            border: 1px solid #374151;
             border-radius: 8px;
-            color: #a5b4fc !important;
+            color: #60a5fa !important; /* Niebieski tekst nagłówka */
             font-weight: 600;
         }
+        .streamlit-expanderContent {
+            background-color: #0f172a;
+            border-left: 1px solid #374151;
+            border-right: 1px solid #374151;
+            border-bottom: 1px solid #374151;
+            color: #cbd5e1;
+        }
         
-        /* Elementy UI */
+        /* UI Elements */
         .stTextInput input, .stTextArea textarea {
             background-color: #111111 !important; color: #e2e8f0 !important;
             border: 1px solid #333 !important; border-radius: 8px !important;
@@ -100,6 +108,14 @@ st.markdown("""
         .stSuccess { background-color: #064e3b !important; color: #a7f3d0 !important; border: 1px solid #059669; }
         .stInfo { background-color: #172554 !important; color: #bfdbfe !important; border: 1px solid #2563eb; }
         .stWarning { background-color: #451a03 !important; color: #fdba74 !important; border: 1px solid #d97706; }
+        
+        /* Grant Cards */
+        .grant-card {
+            padding: 20px;
+            background-color: #111;
+            border-left: 4px solid #6366f1;
+            margin-bottom: 20px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -180,7 +196,7 @@ st.markdown("<div style='text-align: center; margin-bottom: 5px; color: #6366f1;
 
 selected_module = st.radio(
     "Główna Nawigacja",
-    ["🚀 INNOVATE", "💰 ESTIMATOR", "📐 METROLOGY", "🔧 FIELD", "🧠 KNOWLEDGE", "📈 STRATEGY & ROADMAP"],
+    ["🚀 INNOVATE", "💰 ESTIMATOR", "📐 METROLOGY", "🔧 FIELD", "🧠 KNOWLEDGE", "📈 STRATEGY & ROADMAP", "💰 GRANT STRATEGY"],
     horizontal=True,
     label_visibility="collapsed"
 )
@@ -192,26 +208,28 @@ st.markdown("---")
 # ==============================================================================
 if selected_module == "🚀 INNOVATE":
     
-    # --- INFO BOX ---
-    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+    # --- DEEP TECH INFO ---
+    with st.expander("ℹ️ TECH DEEP-DIVE & DEPLOYMENT ARCHITECTURE"):
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("### 🛠️ Architecture & AI Stack")
             st.markdown("""
-            * **AI Engine:** GPT-4o (Reasoning) - analiza logiczna i TRIZ.
-            * **OCR:** LlamaParse (rozumie tabele i schematy) + Tesseract.
-            * **Vision:** OpenAI Vision API (analiza obrazu technicznego).
-            * **Vector DB:** FAISS (lokalnie) lub Pinecone (prod) do szukania w historii (RAG).
+            * **Reasoning Engine:** GPT-4o with Chain-of-Thought (CoT) prompting. Zaimplementowano logikę TRIZ (Teoria Rozwiązywania Zadań Wynalazczych) jako warstwę pośrednią przed generacją odpowiedzi.
+            * **OCR Pipeline (Hybrid):** * *Warstwa 1:* LlamaParse (Deep Learning) do rekonstrukcji struktury tabel i schematów technicznych.
+                * *Warstwa 2:* PDFPlumber/Tesseract jako fallback dla prostego tekstu.
+            * **Vision Capability:** OpenAI Vision API do analizy semantycznej rysunków technicznych (rozpoznawanie rzutów, przekrojów, oznaczeń chropowatości).
+            * **Context Window:** Zarządzanie kontekstem 128k tokenów z techniką "Sliding Window" dla długich norm ISO/PN.
             """)
         with c2:
-            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("### 📦 Production Deployment Strategy")
             st.markdown("""
-            * **Platforma:** Web App (Przeglądarka na PC/Tablet).
-            * **Infrastruktura:** Docker Container na Azure App Service.
-            * **Czas:** 2-3 miesiące (Dopracowanie promptów, testy bezpieczeństwa danych).
-            * **Koszt chmury:** ok. 50-100 USD/miesiąc (zależy od użycia API).
+            * **Infrastructure:** Docker Container orkiestrowany przez Kubernetes (K8s) na Azure AKS lub AWS EKS. Zapewnia to autoskalowanie przy dużym obciążeniu.
+            * **Security:** Dane przesyłane w tunelach SSL/TLS 1.3. Pliki klientów są przetwarzane w pamięci RAM (ephemeral storage) i usuwane natychmiast po analizie (Privacy by Design).
+            * **Interfejsy:** * **Desktop:** React.js frontend komunikujący się z Python FastAPI backendem.
+                * **Mobile:** Responsive Web App (działa w przeglądarce tabletu).
+            * **Koszt chmury (Estymacja):** Start od ~150 USD/msc (Load Balancer + App Service + API Costs).
             """)
-    
+
     # --- SIDEBAR ---
     with st.sidebar:
         st.header("🚀 Panel Konstruktora")
@@ -241,8 +259,8 @@ if selected_module == "🚀 INNOVATE":
              with st.expander("📄 Podgląd dokumentu", expanded=True):
                  if pdf_imgs: st.image(base64.b64decode(pdf_imgs[0]), use_container_width=True)
         with col2:
-            st.markdown("**⚡ Instant MES (Szybka Symulacja)**")
-            if st.button("Uruchom Analizę Naprężeń (AI Predict)"):
+            st.markdown("**⚡ Instant MES (AI Prediction)**")
+            if st.button("Uruchom Analizę Naprężeń"):
                 with st.spinner("Generowanie mapy ciepła..."):
                     time.sleep(1.5)
                     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fem_pole_c.jpg/640px-Fem_pole_c.jpg", caption="AI Stress Prediction")
@@ -281,73 +299,72 @@ if selected_module == "🚀 INNOVATE":
 # ==============================================================================
 elif selected_module == "💰 ESTIMATOR":
     
-    # --- INFO BOX ---
-    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+    with st.expander("ℹ️ TECH DEEP-DIVE & DEPLOYMENT ARCHITECTURE"):
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("### 🛠️ Architecture & AI Stack")
             st.markdown("""
-            * **BOM Extraction:** LayoutLMv3 (Model AI do czytania dokumentów) + Regex.
-            * **Pricing Engine:** Python Pandas + API Hurtowni (REST API).
-            * **Complexity Algo:** `opencv-python` (liczenie konturów/otworów).
+            * **Layout Analysis:** Wykorzystanie modelu LayoutLMv3 (Microsoft) do segmentacji dokumentu (oddzielenie tabeli BOM od rysunku technicznego i ramki).
+            * **Entity Extraction (NER):** Customowy model SpaCy trenowany na nazwach materiałów (np. "S235JR", "AISI 304", "PA6").
+            * **Pricing Logic:**
+                * Algorytm heurystyczny obliczający objętość bounding-boxa detalu.
+                * Dynamiczne API Query do systemów ERP dostawców (simulated REST calls).
+            * **Shape Complexity Index (SCI):** Analiza obrazu (`opencv-python`) licząca liczbę krawędzi (edges) i otworów (blobs) w celu estymacji czasu CNC (Machine Hours).
             """)
         with c2:
-            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("### 📦 Production Deployment Strategy")
             st.markdown("""
-            * **Platforma:** Web App (PC - Dział Handlowy).
-            * **Integracja:** Wymaga spięcia z ERP (np. Comarch/SAP) przez API.
-            * **Czas:** 4-6 miesięcy (Budowa parserów dla różnych typów rysunków).
-            * **Trudność:** Wysoka (Wymaga precyzji 99.9% w odczycie liczb).
+            * **Integration:** Moduł działa jako "Sidecar" do istniejącego ERP (np. SAP/Comarch). Wystawia REST API, które przyjmuje PDF i zwraca JSON z wyceną.
+            * **Scalability:** Celery Workers + Redis do asynchronicznego przetwarzania kolejek plików (dla dużych zapytań ofertowych po 100+ rysunków).
+            * **Client-Side:** Dedykowany plugin do przeglądarki lub moduł webowy.
+            * **Timeline:** MVP (3 m-ce) -> Integracja ERP (6 m-cy).
             """)
 
     with st.sidebar:
         st.header("💰 Panel Kosztorysanta")
-        st.info("Automatyzacja wycen na podstawie rysunków PDF.")
-        st.file_uploader("Wgraj Rysunek Złożeniowy (PDF)", disabled=True)
+        st.file_uploader("Wgraj Rysunek (PDF)", disabled=True)
 
     st.title("SolidRules ESTIMATOR")
     st.subheader("Moduł Ofertowania")
-    st.markdown("### ⚙️ Jak to działa?")
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("1. Vision AI skanuje tabelę BOM.\n2. Python mapuje materiały na ceny.\n3. Algorytm szacuje czas CNC.")
         st.image("https://cdn-icons-png.flaticon.com/512/2942/2942544.png", width=80)
     with col2:
         st.warning("⚠️ Status: Wersja Beta.")
-        st.button("Pobierz przykładowy raport (Demo)", disabled=True)
+        st.button("Pobierz wycenę (Demo)", disabled=True)
 
 # ==============================================================================
 # MODUŁ 3: METROLOGY
 # ==============================================================================
 elif selected_module == "📐 METROLOGY":
     
-    # --- INFO BOX ---
-    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+    with st.expander("ℹ️ TECH DEEP-DIVE & DEPLOYMENT ARCHITECTURE"):
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("### 🛠️ Architecture & AI Stack")
             st.markdown("""
-            * **3D Kernel:** CadQuery / OpenCascade (Analiza plików STEP/STL).
-            * **2D Analysis:** Azure Form Recognizer (Czytanie tolerancji z PDF).
-            * **Math:** `numpy` + `trimesh` (Obliczenia geometryczne).
+            * **3D Kernel:** OpenCascade (OCCT) via Python wrapper (CadQuery/PythonOCC). Umożliwia analityczne (nie mesh!) operacje na bryłach (B-Rep).
+            * **Geometric Analysis:** Obliczanie tensorów bezwładności i bounding boxów z precyzją mikronową.
+            * **GD&T Parser:** Wykorzystanie Azure Form Recognizer custom model do ekstrakcji ramek tolerancji geometrycznych z PDF.
+            * **Comparison Engine:** Algorytm "Digital Overlay" porównujący wektory wymiarowe 3D z odczytanymi wartościami OCR.
             """)
         with c2:
-            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("### 📦 Production Deployment Strategy")
             st.markdown("""
-            * **Platforma:** High-Performance Web App (Wymaga GPU w chmurze).
-            * **Backend:** Worker Pythona do ciężkich obliczeń 3D.
-            * **Czas:** 6-8 miesięcy (Skomplikowana matematyka).
-            * **Uwaga:** Możliwe opóźnienia przy dużych złożeniach (>100MB).
+            * **Compute Requirements:** Moduł wymaga instancji GPU (np. NVIDIA T4) do renderingu i szybkich obliczeń macierzowych.
+            * **Visualization:** WebGL / Three.js na frontendzie do wyświetlania modelu 3D w przeglądarce bez instalacji wtyczek.
+            * **Format Support:** Konwersja w locie plików STEP/IGES do lekkiego formatu glTF do wyświetlania.
+            * **Wdrożenie:** Dedykowany serwer obliczeniowy (On-Premise lub Private Cloud) ze względu na ochronę własności intelektualnej (IP) modeli 3D.
             """)
 
     with st.sidebar:
-        st.header("📐 Panel Jakości (QC)")
-        st.file_uploader("1. Wgraj Model 3D (.STL)", disabled=True)
-        st.file_uploader("2. Wgraj Rysunek 2D (.PDF)", disabled=True)
+        st.header("📐 Panel Jakości")
+        st.file_uploader("1. Wgraj Model 3D", disabled=True)
+        st.file_uploader("2. Wgraj Rysunek 2D", disabled=True)
 
     st.title("SolidRules METROLOGY")
     st.subheader("Cyfrowa Kontrola Jakości")
-    st.markdown("Porównanie modelu 3D z dokumentacją 2D i normami GD&T.")
     st.info("✅ Status: Silnik matematyczny gotowy.")
 
 # ==============================================================================
@@ -355,32 +372,32 @@ elif selected_module == "📐 METROLOGY":
 # ==============================================================================
 elif selected_module == "🔧 FIELD":
     
-    # --- INFO BOX ---
-    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+    with st.expander("ℹ️ TECH DEEP-DIVE & DEPLOYMENT ARCHITECTURE"):
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("### 🛠️ Architecture & AI Stack")
             st.markdown("""
-            * **Mobile App:** PWA (Progressive Web App) lub Flutter (Native).
-            * **Recognition:** MobileNetV2 (Szybka identyfikacja części na telefonie).
-            * **Voice:** OpenAI Whisper (Speech-to-Text w hałasie).
+            * **On-Device AI (Edge Computing):**
+                * TensorFlow Lite / CoreML: Uruchamianie lekkich modeli (MobileNetV3) bezpośrednio na telefonie do rozpoznawania części bez dostępu do internetu.
+            * **Offline-First Data Sync:** PouchDB (lokalnie) <-> CouchDB (serwer). Dane synchronizują się automatycznie po odzyskaniu zasięgu.
+            * **Audio Processing:** OpenAI Whisper (Server-side) lub skompresowany model Distil-Whisper (On-device) do notatek głosowych.
             """)
         with c2:
-            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("### 📦 Production Deployment Strategy")
             st.markdown("""
-            * **Platforma:** iOS / Android (Tablety serwisowe).
-            * **Wdrożenie:** Streamlit nie nadaje się na 'Native Mobile'.
-            * **Strategia:** MVP robimy w Streamlit (działa w przeglądarce mobilnej). Wersja 2.0 wymaga przepisania frontendu na React Native/Flutter (3-4 m-ce pracy developera).
+            * **App Framework:** Flutter (Google) lub React Native. Pozwala na jedną bazę kodu dla iOS i Android.
+            * **Distribution:**
+                * **Enterprise:** Apple Business Manager / Google Play Private Channel (dystrybucja wewnętrzna w firmie).
+                * **SaaS:** PWA (Progressive Web App) - instalacja przez link, bez sklepu.
+            * **Hardware:** Zoptymalizowane pod tablety wzmocnione (Rugged Tablets) używane w przemyśle.
             """)
 
     with st.sidebar:
         st.header("🔧 Panel Mobilny")
-        st.success("Wersja na tablety/smartfony.")
         st.camera_input("Zrób zdjęcie", disabled=True)
 
     st.title("SolidRules FIELD")
     st.subheader("Asystent Utrzymania Ruchu")
-    st.markdown("Identyfikacja części, dostęp do DTR i raportowanie głosowe.")
     st.warning("⚠️ Status: Prototyp interfejsu.")
 
 # ==============================================================================
@@ -388,30 +405,29 @@ elif selected_module == "🔧 FIELD":
 # ==============================================================================
 elif selected_module == "🧠 KNOWLEDGE":
     
-    # --- INFO BOX ---
-    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+    with st.expander("ℹ️ TECH DEEP-DIVE & DEPLOYMENT ARCHITECTURE"):
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("### 🛠️ Architecture & AI Stack")
             st.markdown("""
-            * **Database:** Qdrant / Pinecone (Wektorowa Baza Danych).
-            * **Embeddings:** OpenAI text-embedding-3-small.
-            * **Search:** Semantic Search (Szukanie po znaczeniu, nie słowach).
+            * **Vector Database:** Qdrant (High performance, napisany w Rust). Przechowuje "znaczenie" (embeddings) problemów.
+            * **Embedding Model:** `text-embedding-3-small` (OpenAI) lub `all-MiniLM-L6-v2` (HuggingFace - opcja lokalna/prywatna).
+            * **RAG Pipeline (Retrieval-Augmented Generation):**
+                1. User Query -> Embedding.
+                2. Vector Search (Cosine Similarity).
+                3. Context Injection -> LLM.
             """)
         with c2:
-            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("### 📦 Production Deployment Strategy")
             st.markdown("""
-            * **Platforma:** Backend API (Niewidoczny serwis).
-            * **Integracja:** Działa jako 'mózg' dla wszystkich innych aplikacji.
-            * **Czas:** 1 miesiąc (Konfiguracja bazy i importerów).
-            * **Bezpieczeństwo:** Dane szyfrowane (Enterprise Grade).
+            * **Data Governance:** Role-Based Access Control (RBAC). Inżynier widzi wszystko, stażysta widzi tylko wybrane lekcje.
+            * **Backup:** Automatyczne snapshoty bazy wektorowej na S3/Azure Blob Storage.
+            * **API Gateway:** GraphQL API do łatwego odpytywania bazy przez inne moduły (Field, Innovate).
             """)
 
     with st.sidebar:
         st.header("🧠 Panel Administratora")
-        with st.expander("📥 Importuj Dane"):
-            up = st.file_uploader("Wgraj plik", type=["csv", "xlsx"])
-            if up: st.success("Plik wgrany (Demo)")
+        st.file_uploader("Wgraj plik", disabled=True)
 
     st.title("SolidRules KNOWLEDGE CORE")
     st.subheader("Centralny Mózg Systemu")
@@ -419,7 +435,7 @@ elif selected_module == "🧠 KNOWLEDGE":
         st.dataframe(pd.read_csv(DB_FILE), use_container_width=True)
 
 # ==============================================================================
-# 📈 STRATEGIA & ROADMAP
+# MODUŁ 6: STRATEGIA & ROADMAP
 # ==============================================================================
 elif selected_module == "📈 STRATEGY & ROADMAP":
     
@@ -433,69 +449,125 @@ elif selected_module == "📈 STRATEGY & ROADMAP":
     
     tab1a, tab1b, tab1c, tab1d, tab1e = st.tabs(["1A: TOOLBOX", "1B: PROCESS", "1C: AGENTS", "1D: FLOW (⭐ MVP)", "1E: EVOLVE"])
     
-    # --- 1A ---
     with tab1a:
-        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1A (Toolbox)", expanded=False):
-            st.markdown("""
-            * **Zasada:** Luźne skrypty Pythona spięte interfejsem. Brak wspólnej bazy danych.
-            * **Tech:** Streamlit, Local Filesystem.
-            * **Wdrożenie:** Natychmiastowe (Hosting na Streamlit Cloud).
-            * **Werdykt:** Tanie demo, brak wartości enterprise.
-            """)
+        with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Wariant 1A", expanded=False):
+            st.write("Prosty stack Streamlit. Hosting: Cloud Community.")
         st.header("Wariant 1A: Rodzina Aplikacji")
         st.info("Status: Prototyp")
         
-    # --- 1B ---
-    with tab1b:
-        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1B (Process)", expanded=False):
-            st.markdown("""
-            * **Zasada:** Przepływ danych (ETL). PDF -> JSON -> SQL.
-            * **Tech:** OCR, SQL Database (PostgreSQL), Pandas.
-            * **Wdrożenie:** 2-3 miesiące. Wymaga postawienia serwera bazodanowego.
-            * **Werdykt:** Cyfryzacja biurokracji. Nuda.
-            """)
-        st.header("Wariant 1B: Engineering Ops")
-        st.info("Status: Koncepcja")
-
-    # --- 1C ---
-    with tab1c:
-        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1C (Agents)", expanded=False):
-            st.markdown("""
-            * **Zasada:** Autonomiczne Agenty (LangChain / AutoGPT). Pętle decyzyjne bez człowieka.
-            * **Tech:** LLM Chains, API Integrations (Mail, ERP).
-            * **Wdrożenie:** 6-12 miesięcy (R&D). Bardzo trudne testowanie stabilności.
-            * **Werdykt:** Zbyt ryzykowne biznesowo.
-            """)
-        st.header("Wariant 1C: Autonomy")
-        st.info("Status: Sci-Fi")
-
-    # --- 1D ---
     with tab1d:
-        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1D (Flow) - REKOMENDACJA", expanded=True):
+        with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Wariant 1D (Flow)", expanded=True):
             st.markdown("""
-            * **Zasada:** Human-in-the-Loop. AI proponuje (Draft), Człowiek zatwierdza.
-            * **Tech:**
-                * **Confidence Scoring:** Probabilistyka modeli ML (pewność wyniku).
-                * **State Machine:** Zarządzanie stanem (Nowy -> Do weryfikacji -> Zatwierdzony).
-                * **Feedback Loop:** Zapisywanie korekt do bazy treningowej.
-            * **Wdrożenie Produkcyjne (Cross-Platform):**
-                * **Backend:** Python FastAPI (Logika biznesowa + AI).
-                * **Frontend Web:** React.js (Dla biura/PC).
-                * **Frontend Mobile:** PWA (Progressive Web App) - działa na iOS/Android bez AppStore.
-                * **Infrastruktura:** Kubernetes (Skalowalność).
-            * **Czas do rynku (MVP):** 3-4 miesiące.
+            ### Architektura "Human-in-the-Loop"
+            * **Confidence Engine:** Każdy wynik z AI (cena, materiał) dostaje score (0.0 - 1.0). Wyniki < 0.8 trafiają do kolejki "Review".
+            * **Frontend:** React Flow (do wizualizacji ścieżki decyzyjnej).
+            * **Wdrożenie:** * Start: Monolit modułowy (Python).
+                * Skalowanie: Mikroserwisy (Service Mesh).
+                * Działa na każdym urządzeniu (Responsive Web).
             """)
         st.header("⭐ Wariant 1D: SolidRules FLOW")
         st.success("✅ REKOMENDOWANA STRATEGIA")
-        st.markdown("**AI wykonuje 80% pracy, Człowiek 20% decyzji.**")
 
-    # --- 1E ---
-    with tab1e:
-        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1E (Evolve)", expanded=False):
+# ==============================================================================
+# 💰 NOWA ZAKŁADKA: GRANT STRATEGY
+# ==============================================================================
+elif selected_module == "💰 GRANT STRATEGY":
+    
+    with st.sidebar:
+        st.header("💰 Centrum Grantowe")
+        st.info("Analiza dopasowania do wyzwań GPN-T Strefa Akceleracji.")
+        st.markdown("---")
+        st.caption("Cel: Pozyskanie finansowania na rozwój (Grant do 66k PLN + Mentoring).")
+
+    st.markdown("# 💰 Strategia Grantowa (GPN-T)")
+    st.caption("Analiza potencjału wdrożeniowego w oparciu o wyzwania Rundy 5.")
+
+    tab_g1, tab_g2, tab_g3, tab_g4 = st.tabs([
+        "CTM (Bezpieczeństwo)", 
+        "SFF (Dane)", 
+        "ANWIL (Logistyka)",
+        "REZON (Lab IoT)"
+    ])
+
+    # --- CTM ---
+    with tab_g1:
+        st.subheader("🎯 Wyzwanie: CTM (mDigitalBaltic)")
+        st.markdown("**Temat:** Mobilny kanał zgłaszania zdarzeń/zagrożeń.")
+        
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            st.markdown("#### ✅ Co już mamy (Fit: 90%)")
             st.markdown("""
-            * **Zasada:** Optymalizacja biznesowa. Algorytmy predykcyjne.
-            * **Tech:** Reinforcement Learning (Uczenie ze wzmocnieniem), Big Data Analytics.
-            * **Wdrożenie:** +12 miesięcy od wdrożenia wersji 1D (wymaga dużej ilości danych historycznych).
+            * **Moduł:** `SolidRules FIELD`
+            * **Funkcje:** * Mobile App (PWA) - działa na iOS/Android.
+                * Przesyłanie zdjęć i lokalizacji.
+                * Notatki głosowe (Speech-to-Text).
+                * Backend do zbierania zgłoszeń (`KNOWLEDGE CORE`).
             """)
-        st.header("Wariant 1E: SolidRules EVOLVE")
-        st.info("Status: Cel długoterminowy")
+        with c2:
+            st.markdown("#### 🚀 Czego brakuje (Gap Analysis)")
+            st.markdown("""
+            * Integracja z mapami morskimi (OpenSeaMap).
+            * Tryb offline o podwyższonym bezpieczeństwie (szyfrowanie wojskowe).
+            """)
+        
+        st.info("💡 **Werdykt:** Idealny kandydat. Wystarczy rebrandować 'Field' na 'Safety Monitor'.")
+
+    # --- SFF ---
+    with tab_g2:
+        st.subheader("📊 Wyzwanie: Full House Group (SFF)")
+        st.markdown("**Temat:** Automatyzacja raportowania i analizy danych sprzedażowych.")
+        
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            st.markdown("#### ✅ Co już mamy (Fit: 75%)")
+            st.markdown("""
+            * **Moduł:** `SolidRules ESTIMATOR` (Silnik Danych)
+            * **Funkcje:** * Pobieranie nieustrukturyzowanych danych (PDF/Excel).
+                * Czyszczenie i mapowanie danych (Pandas).
+                * Wizualizacja (Dashboardy Streamlit).
+                * Alerty (`Watchdog` -> Alert Sprzedażowy).
+            """)
+        with c2:
+            st.markdown("#### 🚀 Nowy Członek Rodziny?")
+            st.markdown("""
+            * **Nazwa:** `SolidRules ANALYTICS`
+            * **Opis:** To po prostu silnik Estimatora, ale zamiast cenników stali, wgrywamy cenniki burgerów i logistykę.
+            """)
+
+    # --- ANWIL ---
+    with tab_g3:
+        st.subheader("🏭 Wyzwanie: ANWIL S.A.")
+        st.markdown("**Temat:** Planowanie operacji logistycznych (AI Optimization).")
+        
+        st.warning("⚠️ Fit obecnych modułów: Nisko (30%) - Wymaga nowej technologii.")
+        
+        with st.expander("🆕 PROPOZYCJA NOWEGO MODUŁU: SolidRules OPTIMIZER", expanded=True):
+            st.markdown("""
+            **Koncepcja:**
+            Wykorzystujemy silnik decyzyjny z `INNOVATE` (GPT-4o Reasoning), ale zamiast rozwiązywać problemy mechaniczne (TRIZ), rozwiązujemy problemy logistyczne (Resource Allocation).
+            
+            **Jak to działa:**
+            1. Wsad: Dane o magazynach i transporcie (CSV).
+            2. Silnik: `OR-Tools` (Google) do optymalizacji matematycznej + AI do oceny ryzyka.
+            3. Wynik: Harmonogram optymalny kosztowo.
+            
+            **Estymacja wytworzenia:** 2 miesiące (wykorzystując istniejący szkielet aplikacji).
+            """)
+
+    # --- REZON ---
+    with tab_g4:
+        st.subheader("🧪 Wyzwanie: Rezon Bio")
+        st.markdown("**Temat:** Centralizacja danych z urządzeń (pH-metry, wagi).")
+        
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            st.markdown("#### ✅ Co już mamy (Fit: 85%)")
+            st.markdown("""
+            * **Moduł:** `SolidRules KNOWLEDGE` + `FIELD`
+            * **Koncepcja:** "Digital Twin" dla laboratorium.
+            * **Funkcja:** Field App służy jako interfejs dla "głupich" urządzeń (robimy zdjęcie wyświetlacza wagi -> AI odczytuje wynik -> zapisuje do bazy).
+            """)
+        with c2:
+            st.markdown("#### 🚀 Value Proposition")
+            st.markdown("Tworzymy 'Nakładkę AI' na stary sprzęt, zamiast kupować nowe, drogie urządzenia IoT.")
