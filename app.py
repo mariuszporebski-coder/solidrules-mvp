@@ -450,13 +450,13 @@ elif selected_module == "📈 STRATEGY & ROADMAP":
     tab1a, tab1b, tab1c, tab1d, tab1e = st.tabs(["1A: TOOLBOX", "1B: PROCESS", "1C: AGENTS", "1D: FLOW (⭐ MVP)", "1E: EVOLVE"])
     
     with tab1a:
-        with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Wariant 1A", expanded=False):
+        with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Wariant 1A (Toolbox)", expanded=False):
             st.write("Prosty stack Streamlit. Hosting: Cloud Community.")
         st.header("Wariant 1A: Rodzina Aplikacji")
         st.info("Status: Prototyp")
         
     with tab1d:
-        with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Wariant 1D (Flow)", expanded=True):
+        with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Wariant 1D (Flow) - REKOMENDACJA", expanded=True):
             st.markdown("""
             ### Architektura "Human-in-the-Loop"
             * **Confidence Engine:** Każdy wynik z AI (cena, materiał) dostaje score (0.0 - 1.0). Wyniki < 0.8 trafiają do kolejki "Review".
@@ -475,99 +475,93 @@ elif selected_module == "💰 GRANT STRATEGY":
     
     with st.sidebar:
         st.header("💰 Centrum Grantowe")
-        st.info("Analiza dopasowania do wyzwań GPN-T Strefa Akceleracji.")
+        st.info("Analiza dopasowania do wyzwań GPN-T Strefa Akceleracji (Runda 5).")
         st.markdown("---")
-        st.caption("Cel: Pozyskanie finansowania na rozwój (Grant do 66k PLN + Mentoring).")
+        st.caption("Cel: Pozyskanie finansowania +60k PLN i mentoringu.")
 
     st.markdown("# 💰 Strategia Grantowa (GPN-T)")
-    st.caption("Analiza potencjału wdrożeniowego w oparciu o wyzwania Rundy 5.")
+    st.caption("Analiza potencjału wdrożeniowego w oparciu o opublikowane wyzwania.")
 
-    tab_g1, tab_g2, tab_g3, tab_g4 = st.tabs([
+    tab_g1, tab_g2, tab_g3, tab_g4, tab_g5 = st.tabs([
         "CTM (Bezpieczeństwo)", 
         "SFF (Dane)", 
         "ANWIL (Logistyka)",
-        "REZON (Lab IoT)"
+        "REZON (Lab IoT)",
+        "🏭 ANWIL (Virtual Sensors)"
     ])
 
     # --- CTM ---
     with tab_g1:
         st.subheader("🎯 Wyzwanie: CTM (mDigitalBaltic)")
-        st.markdown("**Temat:** Mobilny kanał zgłaszania zdarzeń/zagrożeń.")
+        st.markdown("**Wyzwanie:** Mobilny kanał zgłaszania zdarzeń/zagrożeń w systemie świadomości sytuacyjnej.")
         
-        c1, c2 = st.columns([1, 1])
-        with c1:
-            st.markdown("#### ✅ Co już mamy (Fit: 90%)")
-            st.markdown("""
-            * **Moduł:** `SolidRules FIELD`
-            * **Funkcje:** * Mobile App (PWA) - działa na iOS/Android.
-                * Przesyłanie zdjęć i lokalizacji.
-                * Notatki głosowe (Speech-to-Text).
-                * Backend do zbierania zgłoszeń (`KNOWLEDGE CORE`).
-            """)
-        with c2:
-            st.markdown("#### 🚀 Czego brakuje (Gap Analysis)")
-            st.markdown("""
-            * Integracja z mapami morskimi (OpenSeaMap).
-            * Tryb offline o podwyższonym bezpieczeństwie (szyfrowanie wojskowe).
-            """)
-        
-        st.info("💡 **Werdykt:** Idealny kandydat. Wystarczy rebrandować 'Field' na 'Safety Monitor'.")
+        with st.expander("ℹ️ TECH SPECS: Jak to wygramy?", expanded=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("#### ✅ Nasz Fit: 90%")
+                st.markdown("Mamy moduł **SolidRules FIELD**, który jest gotowym szkieletem.")
+                st.markdown("""
+                * **Mobile Intake:** Robienie zdjęć, geolokalizacja, notatki.
+                * **Backend:** Centralna baza zgłoszeń.
+                """)
+            with c2:
+                st.markdown("#### 🛠️ Wdrożenie (MVP na grant)")
+                st.markdown("""
+                1. Rebranding `FIELD` na `Safety Monitor App`.
+                2. Dodanie integracji z mapami (OpenLayers/Leaflet).
+                3. Deployment jako PWA (działa na każdym telefonie bez sklepu).
+                """)
 
     # --- SFF ---
     with tab_g2:
         st.subheader("📊 Wyzwanie: Full House Group (SFF)")
-        st.markdown("**Temat:** Automatyzacja raportowania i analizy danych sprzedażowych.")
+        st.markdown("**Wyzwanie:** Automatyzacja raportowania i analizy danych sprzedażowych/logistycznych.")
         
-        c1, c2 = st.columns([1, 1])
-        with c1:
-            st.markdown("#### ✅ Co już mamy (Fit: 75%)")
+        with st.expander("ℹ️ TECH SPECS: Jak to wygramy?", expanded=True):
+            st.markdown("#### ✅ Nasz Fit: 75%")
+            st.markdown("Nasza technologia to 'Silnik Przetwarzania Danych'. Dla `ESTIMATORA` wsadem jest PDF z rysunkiem. Dla SFF wsadem będzie Excel/PDF z raportem kasowym.")
             st.markdown("""
-            * **Moduł:** `SolidRules ESTIMATOR` (Silnik Danych)
-            * **Funkcje:** * Pobieranie nieustrukturyzowanych danych (PDF/Excel).
-                * Czyszczenie i mapowanie danych (Pandas).
-                * Wizualizacja (Dashboardy Streamlit).
-                * Alerty (`Watchdog` -> Alert Sprzedażowy).
-            """)
-        with c2:
-            st.markdown("#### 🚀 Nowy Członek Rodziny?")
-            st.markdown("""
-            * **Nazwa:** `SolidRules ANALYTICS`
-            * **Opis:** To po prostu silnik Estimatora, ale zamiast cenników stali, wgrywamy cenniki burgerów i logistykę.
+            * **Pivot:** `SolidRules ANALYTICS`.
+            * **Tech:** Pandas (czyszczenie danych) + Streamlit (Dashboardy).
+            * **AI:** Wykrywanie anomalii w sprzedaży (Anomaly Detection).
             """)
 
-    # --- ANWIL ---
+    # --- ANWIL OPTIMIZER ---
     with tab_g3:
-        st.subheader("🏭 Wyzwanie: ANWIL S.A.")
-        st.markdown("**Temat:** Planowanie operacji logistycznych (AI Optimization).")
+        st.subheader("🏭 Wyzwanie: ANWIL (Logistyka)")
+        st.markdown("**Wyzwanie:** Planowanie operacji logistycznych (AI Optimization).")
         
-        st.warning("⚠️ Fit obecnych modułów: Nisko (30%) - Wymaga nowej technologii.")
-        
-        with st.expander("🆕 PROPOZYCJA NOWEGO MODUŁU: SolidRules OPTIMIZER", expanded=True):
-            st.markdown("""
-            **Koncepcja:**
-            Wykorzystujemy silnik decyzyjny z `INNOVATE` (GPT-4o Reasoning), ale zamiast rozwiązywać problemy mechaniczne (TRIZ), rozwiązujemy problemy logistyczne (Resource Allocation).
-            
-            **Jak to działa:**
-            1. Wsad: Dane o magazynach i transporcie (CSV).
-            2. Silnik: `OR-Tools` (Google) do optymalizacji matematycznej + AI do oceny ryzyka.
-            3. Wynik: Harmonogram optymalny kosztowo.
-            
-            **Estymacja wytworzenia:** 2 miesiące (wykorzystując istniejący szkielet aplikacji).
-            """)
+        with st.expander("ℹ️ TECH SPECS: Propozycja Nowego Modułu", expanded=True):
+            st.markdown("#### 🆕 SolidRules OPTIMIZER")
+            st.markdown("Wykorzystujemy silnik decyzyjny z `INNOVATE` (GPT-4o Reasoning), ale zamiast rozwiązywać problemy mechaniczne, rozwiązujemy problemy alokacji zasobów.")
+            st.markdown("* **Biblioteka:** Google OR-Tools (Constraint Programming).")
 
     # --- REZON ---
     with tab_g4:
         st.subheader("🧪 Wyzwanie: Rezon Bio")
-        st.markdown("**Temat:** Centralizacja danych z urządzeń (pH-metry, wagi).")
+        st.markdown("**Wyzwanie:** Centralizacja danych z urządzeń (pH-metry, wagi) i Audit Trail.")
         
-        c1, c2 = st.columns([1, 1])
-        with c1:
-            st.markdown("#### ✅ Co już mamy (Fit: 85%)")
-            st.markdown("""
-            * **Moduł:** `SolidRules KNOWLEDGE` + `FIELD`
-            * **Koncepcja:** "Digital Twin" dla laboratorium.
-            * **Funkcja:** Field App służy jako interfejs dla "głupich" urządzeń (robimy zdjęcie wyświetlacza wagi -> AI odczytuje wynik -> zapisuje do bazy).
-            """)
-        with c2:
-            st.markdown("#### 🚀 Value Proposition")
-            st.markdown("Tworzymy 'Nakładkę AI' na stary sprzęt, zamiast kupować nowe, drogie urządzenia IoT.")
+        with st.expander("ℹ️ TECH SPECS: Digital Twin Lab", expanded=True):
+            st.markdown("#### ✅ Nasz Fit: 85%")
+            st.markdown("Tworzymy 'Nakładkę AI' na stary sprzęt. Zamiast wymieniać wagi na nowe (drogie), używamy `FIELD App` do cyfryzacji odczytów.")
+            st.markdown("* **Compliance:** Moduł `Watchdog` zapewnia Audit Trail (kto, kiedy, co zmierzył) - wymagane w Pharma.")
+
+    # --- ANWIL VIRTUAL SENSORS (HIDDEN GEM) ---
+    with tab_g5:
+        st.subheader("💎 Ukryty Diament: ANWIL (Wirtualne Sensory)")
+        st.markdown("**Wyzwania:** Pomiary pary, poziomu w silosach, wykrywanie wycieków.")
+        
+        st.warning("To wyzwanie wygląda na sprzętowe, ale można je wygrać SOFTWAREM.")
+        
+        with st.expander("ℹ️ TECH SPECS: Virtual Sensors (Soft-Sensors)", expanded=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("#### ❌ Podejście Tradycyjne")
+                st.markdown("Montaż fizycznych przepływomierzy (Drogie, psują się).")
+            with c2:
+                st.markdown("#### ✅ Podejście SolidRules (AI)")
+                st.markdown("""
+                **Koncepcja:** Trenujemy model AI na danych historycznych (temperatura, ciśnienie, prąd pomp), aby **wyliczał** przepływ pary.
+                * **Model:** LSTM / XGBoost (Szeregi czasowe).
+                * **Argumentacja:** "Nie kupujcie sprzętu. Wykorzystajcie dane, które już macie."
+                """)
