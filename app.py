@@ -84,13 +84,6 @@ st.markdown("""
             border: 1px solid #374151;
             color: #cbd5e1;
         }
-        .metric-box {
-            background-color: #111;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 3px solid #6366f1;
-            text-align: center;
-        }
         
         /* UI Elements */
         .stTextInput input, .stTextArea textarea {
@@ -210,18 +203,16 @@ if selected_module == "🚀 INNOVATE":
         with c1:
             st.markdown("### 🛠️ Architecture")
             st.markdown("""
-            * **Core:** Python 3.10 + FastAPI.
-            * **AI:** GPT-4o (Reasoning) + LangChain (Memory).
-            * **OCR:** LlamaParse (Tabular data) + Tesseract (Raw text).
-            * **Security:** AES-256 encryption at rest.
+            * **Reasoning Engine:** GPT-4o with Chain-of-Thought (CoT). Zaimplementowano logikę TRIZ.
+            * **OCR Pipeline:** LlamaParse (Tables) + Tesseract (Text).
+            * **Vision:** OpenAI Vision API (Schematy techniczne).
             """)
         with c2:
-            st.markdown("### 📦 Deployment (Production)")
+            st.markdown("### 📦 Deployment")
             st.markdown("""
-            * **Hosting:** Azure App Service (B1 Plan).
-            * **Koszt:** ~150 USD/msc (API + Hosting).
-            * **Skalowalność:** Auto-scale do 10 instancji.
-            * **Timeline:** 2 m-ce do wersji produkcyjnej.
+            * **Hosting:** Azure App Service (Docker).
+            * **Koszt:** ~150 USD/msc.
+            * **Timeline:** 2 m-ce do produkcji.
             """)
 
     with st.sidebar:
@@ -295,17 +286,17 @@ elif selected_module == "💰 ESTIMATOR":
         with c1:
             st.markdown("### 🛠️ Architecture")
             st.markdown("""
-            * **Layout:** Microsoft LayoutLMv3 (Document Segmentation).
-            * **NER:** SpaCy (Entity Extraction - Materials).
-            * **Math:** NumPy/Pandas (Pricing Logic).
-            * **API:** REST Connectors to ERP (SAP/Comarch).
+            * **Layout:** Microsoft LayoutLMv3 (Segmentation).
+            * **NER:** SpaCy (Entity Extraction).
+            * **Math:** NumPy/Pandas.
+            * **SCI:** OpenCV (Shape Complexity Index).
             """)
         with c2:
             st.markdown("### 📦 Deployment")
             st.markdown("""
-            * **Model:** Sidecar Container (microservice).
-            * **Queue:** Redis + Celery (Async processing).
-            * **Koszt wdrożenia:** 4-6 m-cy pracy zespołu.
+            * **Model:** Sidecar Container.
+            * **Queue:** Redis + Celery.
+            * **Integracja:** REST API z ERP.
             """)
 
     with st.sidebar:
@@ -332,16 +323,15 @@ elif selected_module == "📐 METROLOGY":
         with c1:
             st.markdown("### 🛠️ Architecture")
             st.markdown("""
-            * **3D:** OpenCascade (PythonOCC/CadQuery).
-            * **2D:** Azure Form Recognizer (Tolerances).
-            * **Compute:** GPU Required (NVIDIA T4).
+            * **3D:** OpenCascade (PythonOCC).
+            * **2D:** Azure Form Recognizer.
+            * **Compute:** GPU (NVIDIA T4).
             """)
         with c2:
             st.markdown("### 📦 Deployment")
             st.markdown("""
-            * **Server:** GPU Cloud Instance (AWS g4dn.xlarge).
+            * **Server:** GPU Cloud Instance.
             * **Frontend:** Three.js / WebGL.
-            * **Koszt:** Wysoki (Compute heavy).
             """)
 
     with st.sidebar:
@@ -365,14 +355,14 @@ elif selected_module == "🔧 FIELD":
             st.markdown("""
             * **Edge AI:** TensorFlow Lite (MobileNetV3).
             * **Sync:** PouchDB (Offline-First).
-            * **Framework:** Flutter (Cross-platform).
+            * **Framework:** Flutter.
             """)
         with c2:
             st.markdown("### 📦 Deployment")
             st.markdown("""
             * **App:** PWA / Enterprise App Store.
-            * **Devices:** Rugged Tablets (Android/iOS).
-            * **Dev Time:** 3-4 m-ce (Frontend).
+            * **Devices:** Rugged Tablets.
+            * **Timeline:** 3 m-ce (Frontend).
             """)
 
     with st.sidebar:
@@ -395,7 +385,7 @@ elif selected_module == "🧠 KNOWLEDGE":
             st.markdown("""
             * **DB:** Qdrant (Vector DB).
             * **Embeddings:** OpenAI text-embedding-3-small.
-            * **RAG:** Semantic Search + Context Injection.
+            * **RAG:** Semantic Search.
             """)
         with c2:
             st.markdown("### 📦 Deployment")
@@ -415,38 +405,135 @@ elif selected_module == "🧠 KNOWLEDGE":
         st.dataframe(pd.read_csv(DB_FILE), use_container_width=True)
 
 # ==============================================================================
-# MODUŁ 6: STRATEGIA & ROADMAP
+# MODUŁ 6: STRATEGIA & ROADMAP (FIXED & MEATY)
 # ==============================================================================
 elif selected_module == "📈 STRATEGY & ROADMAP":
     
     with st.sidebar:
         st.header("📈 Strategia")
-        st.info("Wybierz wariant.")
+        st.info("Wybierz wariant rozwoju.")
+        st.markdown("---")
+        st.caption("Kliknij w zakładki poniżej.")
     
-    st.markdown("# 🗺️ Strategia Rozwoju")
+    st.markdown("# 🗺️ Strategia Rozwoju Produktu")
+    st.caption("Plan ewolucji od narzędziowni do autonomicznego systemu operacyjnego.")
+    
     tab1a, tab1b, tab1c, tab1d, tab1e = st.tabs(["1A: TOOLBOX", "1B: PROCESS", "1C: AGENTS", "1D: FLOW (⭐ MVP)", "1E: EVOLVE"])
     
+    # --- 1A ---
+    with tab1a:
+        st.header("Wariant 1A: Rodzina Aplikacji (Toolbox)")
+        st.info("ℹ️ **Status:** Obecny Prototyp")
+        
+        with st.expander("🔍 DEEP DIVE: Dlaczego to tylko początek?", expanded=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**Filozofia Biznesowa**")
+                st.markdown("Model 'Cyfrowego Scyzoryka'. Dajemy inżynierowi zestaw niezależnych kalkulatorów (App 1, App 2, App 3). Brak wspólnego przepływu danych.")
+            with c2:
+                st.markdown("**Werdykt Strategiczny**")
+                st.markdown("❌ **Nieskalowalne.** Każda aplikacja wymaga osobnej sprzedaży. Brak efektu sieciowego wewnątrz firmy klienta.")
+
+        st.markdown("""
+        **Architektura:**
+        * Monolit oparty na Streamlit.
+        * Brak bazy danych (Session State).
+        * Deployment: Cloud Community (Darmowy).
+        """)
+
+    # --- 1B ---
+    with tab1b:
+        st.header("Wariant 1B: Engineering Ops (Proces)")
+        st.info("ℹ️ **Status:** Koncepcja Procesowa")
+        
+        with st.expander("🔍 DEEP DIVE: Lepszy Excel?", expanded=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**Filozofia Biznesowa**")
+                st.markdown("Cyfryzacja procesów. Skupiamy się na przepływie: `PDF -> Dane -> CSV`. To klasyczne podejście 'Data-First'.")
+            with c2:
+                st.markdown("**Werdykt Strategiczny**")
+                st.markdown("⚠️ **Ryzykowny.** Wchodzimy w konkurencję z tanimi systemami ERP i darmowymi skryptami. Łatwe do skopiowania przez konkurencję.")
+
+        st.markdown("""
+        **Architektura:**
+        * ETL Pipelines (Extract, Transform, Load).
+        * SQL Database (PostgreSQL) do trzymania stanów.
+        * Worker Queues (Celery) do przetwarzania plików w tle.
+        """)
+
+    # --- 1C ---
+    with tab1c:
+        st.header("Wariant 1C: Autonomy (Agenci AI)")
+        st.info("ℹ️ **Status:** Wizja Futurystyczna")
+        
+        with st.expander("🔍 DEEP DIVE: Zbyt wcześnie?", expanded=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**Filozofia Biznesowa**")
+                st.markdown("Zero-Touch Engineering. Boty same odbierają maile, same wyceniają i same zamawiają materiały. Człowiek jest zbędny.")
+            with c2:
+                st.markdown("**Werdykt Strategiczny**")
+                st.markdown("🛑 **Niebezpieczny.** Przemysł opiera się na zaufaniu i odpowiedzialności. Kto zapłaci za błąd bota, który zamówi 10 ton złej stali? Klient tego nie kupi.")
+
+        st.markdown("""
+        **Architektura:**
+        * Agentic Framework (LangChain / AutoGen).
+        * Autonomous Loops.
+        * API Integrations (Gmail, SAP, Bank).
+        """)
+
+    # --- 1D ---
     with tab1d:
-        with st.expander("ℹ️ TECH SPECS: Wariant 1D (Flow)", expanded=True):
-            st.markdown("""
-            * **Core:** Human-in-the-Loop Architecture.
-            * **Logic:** Confidence Scoring (AI Uncertainty).
-            * **Stack:** Python FastAPI + React Flow.
-            * **Timeline:** 3-4 months to Production MVP.
-            """)
         st.header("⭐ Wariant 1D: SolidRules FLOW")
-        st.success("✅ REKOMENDOWANA STRATEGIA")
+        st.success("✅ REKOMENDOWANA STRATEGIA (Sweet Spot)")
+        
+        with st.expander("🔍 DEEP DIVE: Dlaczego to wygra rynek?", expanded=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**Filozofia Biznesowa**")
+                st.markdown("**Controlled Autonomy (Human-in-the-Loop).** AI wykonuje 80% brudnej roboty (drafty, wstępne wyceny), a Inżynier podejmuje 20% kluczowych decyzji. Dajemy im 'supermoce', a nie zabieramy pracę.")
+            with c2:
+                st.markdown("**Werdykt Strategiczny**")
+                st.markdown("🏆 **Winner.** Buduje zaufanie (człowiek ma kontrolę) i daje szybkość (AI robi nudne rzeczy). Idealny balans.")
+
+        st.markdown("""
+        **Architektura Techniczna (MVP):**
+        * **Confidence Engine:** Probabilistyczny model oceniający pewność wyniku (Score 0-100%).
+        * **Exception Handler:** Interfejs pokazujący tylko te projekty, gdzie AI ma wątpliwości (czerwone flagi).
+        * **Frontend:** React Flow (Wizualizacja procesu decyzyjnego).
+        * **Backend:** Python FastAPI (Mikroserwisy).
+        """)
+
+    # --- 1E ---
+    with tab1e:
+        st.header("Wariant 1E: SolidRules EVOLVE")
+        st.info("ℹ️ **Status:** Cel Długoterminowy (+2 lata)")
+        
+        with st.expander("🔍 DEEP DIVE: Unicorn Mode", expanded=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**Filozofia Biznesowa**")
+                st.markdown("System staje się Dyrektorem Operacyjnym. Optymalizuje nie tylko czas pracy, ale **zysk netto**. Dynamicznie ustala marże, przewiduje odejścia klientów (Churn) i uczy się na błędach produkcji.")
+            with c2:
+                st.markdown("**Werdykt Strategiczny**")
+                st.markdown("🔮 **Święty Graal.** To moment, w którym przestajemy być narzędziem, a stajemy się kluczowym aktywem strategicznym firmy.")
+
+        st.markdown("""
+        **Architektura:**
+        * **Reinforcement Learning:** Algorytmy uczące się polityki cenowej metodą prób i błędów.
+        * **Predictive Analytics:** Analiza Big Data z produkcji i sprzedaży.
+        * **Feedback Loop:** Automatyczne zaciąganie danych 'Post-Mortem' z ERP (Plan vs Wykonanie).
+        """)
 
 # ==============================================================================
-# 💰 GRANT STRATEGY (UPDATED WITH ESTIMATES)
+# 💰 GRANT STRATEGY
 # ==============================================================================
 elif selected_module == "💰 GRANT STRATEGY":
     
     with st.sidebar:
         st.header("💰 Centrum Grantowe")
         st.info("Analiza Wyzwań GPN-T (Runda 5).")
-        st.markdown("---")
-        st.caption("Cel: Finansowanie MVP (~100k PLN).")
 
     st.markdown("# 💰 Strategia Grantowa & Business Case")
     st.caption("Szczegółowa analiza wdrożeniowa dla wybranych partnerów.")
@@ -462,188 +549,120 @@ elif selected_module == "💰 GRANT STRATEGY":
     # --- 1. MARITIME ---
     with tab_m1:
         st.subheader("Sektor Morski & Bezpieczeństwo")
-        
         c1, c2 = st.columns([1, 1])
         with c1:
             st.markdown("#### 🎯 CTM (mDigitalBaltic)")
             st.info("Wyzwanie: Mobilne zgłaszanie zagrożeń.")
             st.markdown("""
             **Rozwiązanie:** `Safety Monitor App` (Rebrand modułu FIELD).
-            
             **💼 Business & Dev Case:**
             * **Zespół:** 1x Senior Mobile (Flutter), 1x Python Backend.
             * **Timeline:** 3 miesiące (1 m-c MVP, 2 m-ce Integracja CTM).
             * **Koszt (Estymacja):** 120,000 PLN.
             """)
             with st.expander("🛠️ Tech Deep Dive"):
-                st.markdown("""
-                * **Geo-Spatial:** Mapbox GL JS / OpenLayers (Mapy morskie).
-                * **Protocol:** MQTT (Lekka komunikacja przy słabym zasięgu na morzu).
-                * **Security:** Szyfrowanie End-to-End (wymóg wojskowy).
-                """)
-        
+                st.markdown("* **Geo-Spatial:** Mapbox GL JS / OpenLayers.\n* **Protocol:** MQTT.\n* **Security:** End-to-End Encryption.")
         with c2:
             st.markdown("#### ⚓ PORT GDYNIA")
             st.info("Wyzwanie: Baza danych środowiskowych.")
             st.markdown("""
-            **Rozwiązanie:** `Port Digital Twin` (Rebrand modułu KNOWLEDGE).
-            
+            **Rozwiązanie:** `Port Digital Twin` (Rebrand KNOWLEDGE).
             **💼 Business & Dev Case:**
             * **Zespół:** 1x Data Engineer, 1x Fullstack Dev.
             * **Timeline:** 3 miesiące.
             * **Koszt (Estymacja):** 90,000 PLN.
             """)
-            with st.expander("🛠️ Tech Deep Dive"):
-                st.markdown("""
-                * **Ingestion:** Apache Airflow (ETL pipeline dla danych z czujników).
-                * **DB:** TimescaleDB (Time-series data dla hałasu/pyłu).
-                * **Viz:** Grafana / Streamlit Dashboard.
-                """)
 
     # --- 2. INDUSTRIAL ---
     with tab_m2:
         st.subheader("Przemysł Ciężki")
-        
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("#### ⛽ ORLEN S.A.")
-            st.info("Wyzwanie: Wykrywanie wycieków (Vision AI).")
+            st.info("Wyzwanie: Wykrywanie wycieków.")
             st.markdown("""
             **Rozwiązanie:** `SolidRules VISION`.
-            
             **💼 Business & Dev Case:**
             * **Zespół:** 2x AI Engineer (CV), 1x Backend.
-            * **Timeline:** 5 miesięcy (Trenowanie modeli na danych video).
-            * **Koszt (Estymacja):** 180,000 PLN.
+            * **Timeline:** 5 miesięcy.
+            * **Koszt:** 180,000 PLN.
             """)
-            with st.expander("🛠️ Tech Deep Dive"):
-                st.markdown("""
-                * **Model:** YOLOv8 (Real-time object detection) finetunowany na dym/wycieki.
-                * **Inference:** NVIDIA DeepStream SDK.
-                * **Hardware:** Edge AI Gateway (np. Jetson Orin) przy kamerach.
-                """)
-                
         with c2:
             st.markdown("#### 🏭 ANWIL (Logistyka)")
             st.info("Wyzwanie: Optymalizacja transportu.")
             st.markdown("""
             **Rozwiązanie:** `SolidRules OPTIMIZER`.
-            
             **💼 Business & Dev Case:**
             * **Zespół:** 1x Algorithm Expert, 1x Python Dev.
             * **Timeline:** 4 miesiące.
-            * **Koszt (Estymacja):** 140,000 PLN.
+            * **Koszt:** 140,000 PLN.
             """)
-            with st.expander("🛠️ Tech Deep Dive"):
-                st.markdown("""
-                * **Solver:** Google OR-Tools (Constraint Programming).
-                * **Input:** CSV/Excel z awizacjami.
-                * **Output:** Harmonogram (.xlsx) + API Response.
-                """)
 
     # --- 3. COMMERCIAL ---
     with tab_m3:
         st.subheader("Handel & Usługi")
-        
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("#### 📊 SFF (Full House Group)")
-            st.info("Wyzwanie: Automatyzacja raportów sprzedaży.")
+            st.info("Wyzwanie: Raporty sprzedaży.")
             st.markdown("""
-            **Rozwiązanie:** `SolidRules ANALYTICS` (Silnik Estimatora).
-            
+            **Rozwiązanie:** `SolidRules ANALYTICS`.
             **💼 Business & Dev Case:**
-            * **Zespół:** 1x Data Engineer, 1x Frontend (React/Streamlit).
+            * **Zespół:** 1x Data Engineer, 1x Frontend.
             * **Timeline:** 3 miesiące.
-            * **Koszt (Estymacja):** 80,000 PLN.
+            * **Koszt:** 80,000 PLN.
             """)
-            with st.expander("🛠️ Tech Deep Dive"):
-                st.markdown("""
-                * **ETL:** Pandas/PySpark (Czyszczenie danych kasowych).
-                * **Warehouse:** Snowflake / BigQuery.
-                * **BI:** PowerBI Embedded lub Custom Dashboard.
-                """)
-                
         with c2:
             st.markdown("#### 💄 PRIMAVERA PARFUM")
             st.info("Wyzwanie: Optymalizacja pakowania.")
             st.markdown("""
             **Rozwiązanie:** `3D Bin Packing AI`.
-            
             **💼 Business & Dev Case:**
-            * **Zespół:** 1x Math/Algo Dev, 1x Backend.
+            * **Zespół:** 1x Math Dev, 1x Backend.
             * **Timeline:** 4 miesiące.
-            * **Koszt (Estymacja):** 110,000 PLN.
+            * **Koszt:** 110,000 PLN.
             """)
-            with st.expander("🛠️ Tech Deep Dive"):
-                st.markdown("""
-                * **Algo:** 3D Bin Packing Problem (Heurystyka genetyczna).
-                * **Input:** Wymiary produktów (z bazy PIM).
-                * **Output:** Wizualizacja 3D (Three.js) ułożenia w kartonie.
-                """)
 
     # --- 4. OPERATIONS ---
     with tab_m4:
         st.subheader("Operacje & HR")
-        
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("#### 🧪 REZON BIO")
-            st.info("Wyzwanie: Cyfryzacja Labu (Wagi/pH).")
+            st.info("Wyzwanie: Cyfryzacja Labu.")
             st.markdown("""
             **Rozwiązanie:** `Digital Lab Assistant`.
-            
             **💼 Business & Dev Case:**
             * **Zespół:** 1x Mobile Dev, 1x Backend.
             * **Timeline:** 3 miesiące.
-            * **Koszt (Estymacja):** 95,000 PLN.
+            * **Koszt:** 95,000 PLN.
             """)
-            with st.expander("🛠️ Tech Deep Dive"):
-                st.markdown("""
-                * **OCR:** Google ML Kit (Text Recognition na urządzeniu).
-                * **Compliance:** Blockchain / Immutable Ledger (Audit Trail).
-                """)
-
         with c2:
             st.markdown("#### 👥 QLEVEL")
             st.info("Wyzwanie: AI w HR.")
             st.markdown("""
             **Rozwiązanie:** `HR Intelligence`.
-            
             **💼 Business & Dev Case:**
             * **Zespół:** 1x AI Engineer (NLP).
             * **Timeline:** 2 miesiące.
-            * **Koszt (Estymacja):** 60,000 PLN.
+            * **Koszt:** 60,000 PLN.
             """)
-            with st.expander("🛠️ Tech Deep Dive"):
-                st.markdown("""
-                * **CV Parsing:** PyMuPDF + GPT-4o.
-                * **Matching:** Cosine Similarity (Kandydat vs Oferta).
-                """)
 
     # --- 5. HIDDEN GEM ---
     with tab_m5:
-        st.subheader("💎 ANWIL: Virtual Sensors (Soft-Sensors)")
-        st.warning("🔥 Największy potencjał marżowy (High Tech / Low Hardware).")
-        
+        st.subheader("💎 ANWIL: Virtual Sensors")
+        st.warning("🔥 Największy potencjał marżowy (High Tech).")
         c1, c2 = st.columns([2, 1])
         with c1:
             st.markdown("""
-            **Problem:** Anwil chce mierzyć parę i poziom w silosach, ale sprzęt jest drogi.
-            **Rozwiązanie:** `SolidRules PREDICT`. Trenujemy AI na danych historycznych, by **wyliczała** te wartości.
-            
+            **Problem:** Anwil chce mierzyć parę/silosy bez drogiego sprzętu.
+            **Rozwiązanie:** `SolidRules PREDICT`. AI wylicza wartości z danych historycznych.
             **💼 Business & Dev Case:**
             * **Zespół:** 2x Senior Data Scientist, 1x Data Eng.
-            * **Timeline:** 4-5 miesięcy (PoC -> Trening -> Prod).
-            * **Koszt (Estymacja):** 180,000 PLN.
+            * **Timeline:** 4-5 miesięcy.
+            * **Koszt:** 180,000 PLN.
             """)
         with c2:
-            st.metric("Oszczędność Klienta", "miliony PLN", delta="vs Hardware")
-        
+            st.metric("ROI Klienta", "10x", delta="vs Hardware")
         with st.expander("🛠️ Tech Deep Dive (Secret Sauce)", expanded=True):
-            st.markdown("""
-            * **Input:** SCADA Historical Data (Temperatury, Prądy pomp, Stan zaworów).
-            * **Model:** LSTM (Long Short-Term Memory) / XGBoost Regressor.
-            * **Validation:** Porównanie z mobilnym przepływomierzem (kalibracja).
-            * **Deployment:** Docker Container na serwerze brzegowym (Edge).
-            """)
+            st.markdown("* **Model:** LSTM / XGBoost (Time-Series).\n* **Deployment:** Edge AI (Docker).")
