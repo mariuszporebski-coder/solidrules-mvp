@@ -17,30 +17,29 @@ from llama_parse import LlamaParse
 # --- NAPRAWA ASYNCIO ---
 nest_asyncio.apply()
 
-# --- KONFIGURACJA STRONY (ZMIANA: WYMUSZENIE OTWARTEGO PASKA) ---
+# --- KONFIGURACJA STRONY ---
 st.set_page_config(
     page_title="SolidRules Enterprise", 
     page_icon="💠", 
     layout="wide",
-    initial_sidebar_state="expanded"  # <--- TO NAPRAWIA PROBLEM ZNIKAJĄCEGO PASKA
+    initial_sidebar_state="expanded"
 )
 
-# --- CSS (PRO DESIGN - NAPRAWIONY NAGŁÓWEK) ---
+# --- CSS (PRO DESIGN) ---
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
         
-        /* USUNĄŁEM UKRYWANIE HEADER, ŻEBYŚ WIDZIAŁ PRZYCISKI STERUJĄCE */
         .stApp { background-color: #050505; }
         
-        /* Sidebar styling */
+        /* Sidebar */
         section[data-testid="stSidebar"] { 
             background-color: #0c0c0c; 
             border-right: 1px solid #1e1e1e; 
         }
         
-        /* GÓRNA NAWIGACJA (MENU) */
+        /* GÓRNA NAWIGACJA */
         div[role="radiogroup"] {
             display: flex;
             justify-content: center;
@@ -72,6 +71,14 @@ st.markdown("""
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
 
+        /* INFO BOX STYLING */
+        .streamlit-expanderHeader {
+            background-color: #1e1e2e;
+            border-radius: 8px;
+            color: #a5b4fc !important;
+            font-weight: 600;
+        }
+        
         /* Elementy UI */
         .stTextInput input, .stTextArea textarea {
             background-color: #111111 !important; color: #e2e8f0 !important;
@@ -88,7 +95,6 @@ st.markdown("""
             background: linear-gradient(to right, #4f46e5, #6366f1); border: none;
         }
         
-        /* Typography & Alerts */
         h1, h2, h3 { color: #f8fafc !important; }
         p, li, label, .stMarkdown, .stCaption { color: #94a3b8 !important; }
         .stSuccess { background-color: #064e3b !important; color: #a7f3d0 !important; border: 1px solid #059669; }
@@ -168,7 +174,7 @@ def pdf_to_images_base64(file_bytes):
 init_db()
 
 # ==========================================
-# 🧭 GŁÓWNA NAWIGACJA (TOP MENU)
+# 🧭 GŁÓWNA NAWIGACJA
 # ==========================================
 st.markdown("<div style='text-align: center; margin-bottom: 5px; color: #6366f1; font-size: 0.8em; letter-spacing: 2px; font-weight: bold;'>SOLIDRULES ENTERPRISE PLATFORM</div>", unsafe_allow_html=True)
 
@@ -182,22 +188,39 @@ selected_module = st.radio(
 st.markdown("---")
 
 # ==============================================================================
-# MODUŁ 1: INNOVATE (DZIAŁAJĄCY KOD R&D)
+# MODUŁ 1: INNOVATE
 # ==============================================================================
 if selected_module == "🚀 INNOVATE":
     
-    # --- SIDEBAR (Musi być widoczny!) ---
+    # --- INFO BOX ---
+    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("""
+            * **AI Engine:** GPT-4o (Reasoning) - analiza logiczna i TRIZ.
+            * **OCR:** LlamaParse (rozumie tabele i schematy) + Tesseract.
+            * **Vision:** OpenAI Vision API (analiza obrazu technicznego).
+            * **Vector DB:** FAISS (lokalnie) lub Pinecone (prod) do szukania w historii (RAG).
+            """)
+        with c2:
+            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("""
+            * **Platforma:** Web App (Przeglądarka na PC/Tablet).
+            * **Infrastruktura:** Docker Container na Azure App Service.
+            * **Czas:** 2-3 miesiące (Dopracowanie promptów, testy bezpieczeństwa danych).
+            * **Koszt chmury:** ok. 50-100 USD/miesiąc (zależy od użycia API).
+            """)
+    
+    # --- SIDEBAR ---
     with st.sidebar:
         st.header("🚀 Panel Konstruktora")
         st.info("💡 **Cel:** Rozwiązywanie problemów inżynierskich, analiza norm i generowanie koncepcji.")
-        
         st.markdown("### 🛡️ Watchdog Prawny")
         st.warning("⚠️ Wykryto zmianę w normie PN-EN ISO 12100!")
-        
         uploaded_file = st.file_uploader("Wgraj Dokumentację (PDF)", type=["pdf"])
-        st.caption("Silnik: GPT-4o + Vision AI + Physics Knowledge")
 
-    # --- MAIN CONTENT ---
+    # --- MAIN ---
     st.title("SolidRules INNOVATE")
     st.caption("Wirtualny Główny Inżynier (R&D Copilot)")
 
@@ -223,33 +246,24 @@ if selected_module == "🚀 INNOVATE":
                 with st.spinner("Generowanie mapy ciepła..."):
                     time.sleep(1.5)
                     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fem_pole_c.jpg/640px-Fem_pole_c.jpg", caption="AI Stress Prediction")
-                    st.error("Wykryto hotspot w strefie A (Współczynnik K > 2.5). Zalecane zaokrąglenie.")
+                    st.error("Wykryto hotspot w strefie A (Współczynnik K > 2.5).")
 
     st.markdown("### 💬 Konsultacja Inżynierska")
-    problem = st.text_area("Opisz problem techniczny lub zadaj pytanie:", height=100, placeholder="Np. Jak uszczelnić ten wał przy 200 stopniach Celsjusza?")
+    problem = st.text_area("Opisz problem techniczny lub zadaj pytanie:", height=100)
     
     if st.button("🚀 Generuj Rozwiązanie (TRIZ)", type="primary"):
         with st.spinner("🧠 Inżynier AI analizuje problem..."):
             history = search_lessons(problem)
-            
-            system_prompt = """Jesteś Głównym Inżynierem. Masz dwa tryby:
-            1. BIBLIOTEKARZ: Jeśli pytanie dotyczy danych z pliku -> podaj fakty.
-            2. EKSPERT TRIZ: Jeśli to problem techniczny -> Przeprowadź analizę (Diagnoza -> Sprzeczność -> Koncepcje -> Ryzyko).
-            Wspomnij o podobnych przypadkach z Historii Firmy, jeśli są dostępne."""
-            
-            user_msg = f"PYTANIE: {problem}\n\nHISTORIA FIRMY:\n{history}"
-            if has_file: user_msg += f"\n\nDOKUMENTACJA (OCR):\n{pdf_text[:25000]}"
-            
+            system_prompt = "Jesteś Głównym Inżynierem. Użyj TRIZ i historii firmy."
+            user_msg = f"PYTANIE: {problem}\n\nHISTORIA: {history}"
+            if has_file: user_msg += f"\n\nDOKUMENTACJA: {pdf_text[:20000]}"
             content = [{"type": "text", "text": user_msg}]
             if has_file and pdf_imgs:
                  for img in pdf_imgs[:3]: content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img}"}})
             
             try:
                 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-                resp = client.chat.completions.create(model="gpt-4o", messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": content}
-                ])
+                resp = client.chat.completions.create(model="gpt-4o", messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": content}])
                 ans = resp.choices[0].message.content
                 st.markdown("### 💡 Raport Ekspercki")
                 st.markdown(ans)
@@ -266,102 +280,143 @@ if selected_module == "🚀 INNOVATE":
 # MODUŁ 2: ESTIMATOR
 # ==============================================================================
 elif selected_module == "💰 ESTIMATOR":
+    
+    # --- INFO BOX ---
+    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("""
+            * **BOM Extraction:** LayoutLMv3 (Model AI do czytania dokumentów) + Regex.
+            * **Pricing Engine:** Python Pandas + API Hurtowni (REST API).
+            * **Complexity Algo:** `opencv-python` (liczenie konturów/otworów).
+            """)
+        with c2:
+            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("""
+            * **Platforma:** Web App (PC - Dział Handlowy).
+            * **Integracja:** Wymaga spięcia z ERP (np. Comarch/SAP) przez API.
+            * **Czas:** 4-6 miesięcy (Budowa parserów dla różnych typów rysunków).
+            * **Trudność:** Wysoka (Wymaga precyzji 99.9% w odczycie liczb).
+            """)
+
     with st.sidebar:
         st.header("💰 Panel Kosztorysanta")
         st.info("Automatyzacja wycen na podstawie rysunków PDF.")
         st.file_uploader("Wgraj Rysunek Złożeniowy (PDF)", disabled=True)
-        st.markdown("---")
-        st.metric("Kurs Euro", "4.32 PLN")
-        st.metric("Cena Stali (S235)", "4.50 PLN/kg")
 
     st.title("SolidRules ESTIMATOR")
-    st.subheader("Moduł Ofertowania i Kalkulacji Kosztów")
-    st.markdown("""
-    ### ⚙️ Jak to działa? (Architektura Procesu)
-    1.  **Ekstrakcja Tabelaryczna (Vision AI):** Algorytm lokalizuje BOM i konwertuje na dane.
-    2.  **Inteligentny Cennik:** Mapuje materiały na ceny rynkowe.
-    3.  **Shape Complexity Index (SCI):** Estymuje czas maszynowy CNC.
-    4.  **Generowanie Oferty:** Tworzy gotowy PDF dla klienta.
-    """)
+    st.subheader("Moduł Ofertowania")
+    st.markdown("### ⚙️ Jak to działa?")
     col1, col2 = st.columns(2)
     with col1:
-        st.image("https://cdn-icons-png.flaticon.com/512/2942/2942544.png", width=100, caption="PDF -> Data -> Price")
+        st.markdown("1. Vision AI skanuje tabelę BOM.\n2. Python mapuje materiały na ceny.\n3. Algorytm szacuje czas CNC.")
+        st.image("https://cdn-icons-png.flaticon.com/512/2942/2942544.png", width=80)
     with col2:
-        st.warning("⚠️ Status: Wersja Beta planowana na Q3 2026.")
-        st.button("Pobierz przykładowy raport wyceny (Demo)", disabled=True)
+        st.warning("⚠️ Status: Wersja Beta.")
+        st.button("Pobierz przykładowy raport (Demo)", disabled=True)
 
 # ==============================================================================
 # MODUŁ 3: METROLOGY
 # ==============================================================================
 elif selected_module == "📐 METROLOGY":
+    
+    # --- INFO BOX ---
+    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("""
+            * **3D Kernel:** CadQuery / OpenCascade (Analiza plików STEP/STL).
+            * **2D Analysis:** Azure Form Recognizer (Czytanie tolerancji z PDF).
+            * **Math:** `numpy` + `trimesh` (Obliczenia geometryczne).
+            """)
+        with c2:
+            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("""
+            * **Platforma:** High-Performance Web App (Wymaga GPU w chmurze).
+            * **Backend:** Worker Pythona do ciężkich obliczeń 3D.
+            * **Czas:** 6-8 miesięcy (Skomplikowana matematyka).
+            * **Uwaga:** Możliwe opóźnienia przy dużych złożeniach (>100MB).
+            """)
+
     with st.sidebar:
         st.header("📐 Panel Jakości (QC)")
-        st.info("Weryfikacja zgodności wykonania z projektem.")
         st.file_uploader("1. Wgraj Model 3D (.STL)", disabled=True)
         st.file_uploader("2. Wgraj Rysunek 2D (.PDF)", disabled=True)
 
     st.title("SolidRules METROLOGY")
-    st.subheader("Cyfrowa Kontrola Jakości (Digital Twin Check)")
-    st.markdown("""
-    ### ⚙️ Jak to działa?
-    1.  **Analiza Geometrii 3D:** Silnik mierzy bryłę.
-    2.  **Analiza Rysunku 2D:** AI odczytuje tolerancje.
-    3.  **Cross-Check:** Porównuje nominal z rzeczywistością.
-    """)
-    st.info("✅ Status: Silnik matematyczny gotowy. Trwa praca nad UI.")
+    st.subheader("Cyfrowa Kontrola Jakości")
+    st.markdown("Porównanie modelu 3D z dokumentacją 2D i normami GD&T.")
+    st.info("✅ Status: Silnik matematyczny gotowy.")
 
 # ==============================================================================
 # MODUŁ 4: FIELD
 # ==============================================================================
 elif selected_module == "🔧 FIELD":
+    
+    # --- INFO BOX ---
+    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("""
+            * **Mobile App:** PWA (Progressive Web App) lub Flutter (Native).
+            * **Recognition:** MobileNetV2 (Szybka identyfikacja części na telefonie).
+            * **Voice:** OpenAI Whisper (Speech-to-Text w hałasie).
+            """)
+        with c2:
+            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("""
+            * **Platforma:** iOS / Android (Tablety serwisowe).
+            * **Wdrożenie:** Streamlit nie nadaje się na 'Native Mobile'.
+            * **Strategia:** MVP robimy w Streamlit (działa w przeglądarce mobilnej). Wersja 2.0 wymaga przepisania frontendu na React Native/Flutter (3-4 m-ce pracy developera).
+            """)
+
     with st.sidebar:
         st.header("🔧 Panel Mobilny")
         st.success("Wersja na tablety/smartfony.")
-        st.camera_input("Zrób zdjęcie części", disabled=True)
-        st.text_input("Kod błędu maszyny:", placeholder="ERROR-500")
+        st.camera_input("Zrób zdjęcie", disabled=True)
 
     st.title("SolidRules FIELD")
     st.subheader("Asystent Utrzymania Ruchu")
-    st.markdown("""
-    ### ⚙️ Jak to działa?
-    1.  **Visual Search:** Rozpoznawanie części ze zdjęcia.
-    2.  **Inteligentne DTR:** Wyszukiwanie procedur naprawczych.
-    3.  **Pętla Zwrotna:** Zgłoszenia z terenu trafiają do inżynierów.
-    """)
-    st.warning("⚠️ Status: Faza prototypowania.")
+    st.markdown("Identyfikacja części, dostęp do DTR i raportowanie głosowe.")
+    st.warning("⚠️ Status: Prototyp interfejsu.")
 
 # ==============================================================================
 # MODUŁ 5: KNOWLEDGE
 # ==============================================================================
 elif selected_module == "🧠 KNOWLEDGE":
+    
+    # --- INFO BOX ---
+    with st.expander("ℹ️ TECH SPECS & DEPLOYMENT: Jak to działa pod maską?"):
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**🛠️ Stack Technologiczny:**")
+            st.markdown("""
+            * **Database:** Qdrant / Pinecone (Wektorowa Baza Danych).
+            * **Embeddings:** OpenAI text-embedding-3-small.
+            * **Search:** Semantic Search (Szukanie po znaczeniu, nie słowach).
+            """)
+        with c2:
+            st.markdown("**📦 Estymacja Wdrożenia (Prod):**")
+            st.markdown("""
+            * **Platforma:** Backend API (Niewidoczny serwis).
+            * **Integracja:** Działa jako 'mózg' dla wszystkich innych aplikacji.
+            * **Czas:** 1 miesiąc (Konfiguracja bazy i importerów).
+            * **Bezpieczeństwo:** Dane szyfrowane (Enterprise Grade).
+            """)
+
     with st.sidebar:
         st.header("🧠 Panel Administratora")
-        st.info("Zarządzanie pamięcią systemu (Lessons Learnt).")
-        with st.expander("📥 Importuj z Excela/CSV"):
+        with st.expander("📥 Importuj Dane"):
             up = st.file_uploader("Wgraj plik", type=["csv", "xlsx"])
-            if up:
-                try:
-                    df_new = pd.read_csv(up) if up.name.endswith('.csv') else pd.read_excel(up)
-                    st.write("Podgląd:", df_new.head(2))
-                    col_p = st.selectbox("Kolumna PROBLEM", df_new.columns)
-                    col_s = st.selectbox("Kolumna ROZWIĄZANIE", df_new.columns)
-                    if st.button("Scal z bazą"):
-                        rows = []
-                        for _, row in df_new.iterrows():
-                            rows.append([datetime.now().strftime("%Y-%m-%d"), row[col_p], row[col_s], "Import"])
-                        with open(DB_FILE, 'a', newline='', encoding='utf-8') as f:
-                            csv.writer(f).writerows(rows)
-                        st.success("Zaimportowano!")
-                except: st.error("Błąd pliku")
+            if up: st.success("Plik wgrany (Demo)")
 
     st.title("SolidRules KNOWLEDGE CORE")
     st.subheader("Centralny Mózg Systemu")
     if os.path.exists(DB_FILE):
-        df = pd.read_csv(DB_FILE)
-        st.metric("Liczba zgromadzonych rozwiązań", len(df))
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.warning("Baza wiedzy jest pusta.")
+        st.dataframe(pd.read_csv(DB_FILE), use_container_width=True)
 
 # ==============================================================================
 # 📈 STRATEGIA & ROADMAP
@@ -370,43 +425,77 @@ elif selected_module == "📈 STRATEGY & ROADMAP":
     
     with st.sidebar:
         st.header("📈 Centrum Dowodzenia")
-        st.info("Zarządzanie wizją i kierunkiem rozwoju produktu.")
+        st.info("Zarządzanie wizją produktu.")
         st.markdown("---")
-        st.caption("Wybierz zakładkę po prawej, aby poznać szczegóły.")
+        st.caption("Wybierz zakładkę po prawej.")
     
     st.markdown("# 🗺️ Strategia Rozwoju Produktu")
-    st.caption("Ewolucja od prostych narzędzi do autonomicznego systemu operacyjnego.")
     
-    tab1a, tab1b, tab1c, tab1d, tab1e = st.tabs([
-        "1A: TOOLBOX", 
-        "1B: PROCESS", 
-        "1C: AGENTS", 
-        "1D: FLOW (⭐ MVP)", 
-        "1E: EVOLVE"
-    ])
+    tab1a, tab1b, tab1c, tab1d, tab1e = st.tabs(["1A: TOOLBOX", "1B: PROCESS", "1C: AGENTS", "1D: FLOW (⭐ MVP)", "1E: EVOLVE"])
     
-    # TREŚCI ZAKŁADEK STRATEGII (SKRÓCONE DLA CZYTELNOŚCI KODU, ALE TREŚCIWE W DISPLAYU)
+    # --- 1A ---
     with tab1a:
-        st.header("Wariant 1A: Rodzina Aplikacji (Toolbox)")
-        st.info("ℹ️ **Status:** Obecny Prototyp")
-        st.markdown("**Filozofia:** Zestaw luźnych narzędzi (Kalkulatorów) dla inżynierów. Dobry start, ale słabe skalowanie.")
+        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1A (Toolbox)", expanded=False):
+            st.markdown("""
+            * **Zasada:** Luźne skrypty Pythona spięte interfejsem. Brak wspólnej bazy danych.
+            * **Tech:** Streamlit, Local Filesystem.
+            * **Wdrożenie:** Natychmiastowe (Hosting na Streamlit Cloud).
+            * **Werdykt:** Tanie demo, brak wartości enterprise.
+            """)
+        st.header("Wariant 1A: Rodzina Aplikacji")
+        st.info("Status: Prototyp")
+        
+    # --- 1B ---
     with tab1b:
-        st.header("Wariant 1B: Engineering Ops (Proces)")
-        st.info("ℹ️ **Status:** Koncepcja Procesowa")
-        st.markdown("**Filozofia:** Cyfryzacja obecnych procesów. 'Lepszy Excel'. Konieczny etap, ale mało innowacyjny.")
+        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1B (Process)", expanded=False):
+            st.markdown("""
+            * **Zasada:** Przepływ danych (ETL). PDF -> JSON -> SQL.
+            * **Tech:** OCR, SQL Database (PostgreSQL), Pandas.
+            * **Wdrożenie:** 2-3 miesiące. Wymaga postawienia serwera bazodanowego.
+            * **Werdykt:** Cyfryzacja biurokracji. Nuda.
+            """)
+        st.header("Wariant 1B: Engineering Ops")
+        st.info("Status: Koncepcja")
+
+    # --- 1C ---
     with tab1c:
-        st.header("Wariant 1C: Autonomy (Agenci AI)")
-        st.info("ℹ️ **Status:** Wizja Futurystyczna")
-        st.markdown("**Filozofia:** AI robi wszystko. Człowiek tylko patrzy. Zbyt duże ryzyko na start.")
+        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1C (Agents)", expanded=False):
+            st.markdown("""
+            * **Zasada:** Autonomiczne Agenty (LangChain / AutoGPT). Pętle decyzyjne bez człowieka.
+            * **Tech:** LLM Chains, API Integrations (Mail, ERP).
+            * **Wdrożenie:** 6-12 miesięcy (R&D). Bardzo trudne testowanie stabilności.
+            * **Werdykt:** Zbyt ryzykowne biznesowo.
+            """)
+        st.header("Wariant 1C: Autonomy")
+        st.info("Status: Sci-Fi")
+
+    # --- 1D ---
     with tab1d:
-        st.header("⭐ Wariant 1D: SolidRules FLOW (Controlled Autonomy)")
-        st.success("✅ **Status:** REKOMENDOWANA STRATEGIA")
-        st.markdown("""
-        **Filozofia:** AI wykonuje 80% pracy, Człowiek podejmuje 20% kluczowych decyzji.
-        **Kluczowe:** Confidence Scoring (AI ocenia swoją pewność), Zarządzanie Wyjątkami.
-        **Dlaczego to kupią?** Szybkość AI + Kontrola Inżyniera.
-        """)
+        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1D (Flow) - REKOMENDACJA", expanded=True):
+            st.markdown("""
+            * **Zasada:** Human-in-the-Loop. AI proponuje (Draft), Człowiek zatwierdza.
+            * **Tech:**
+                * **Confidence Scoring:** Probabilistyka modeli ML (pewność wyniku).
+                * **State Machine:** Zarządzanie stanem (Nowy -> Do weryfikacji -> Zatwierdzony).
+                * **Feedback Loop:** Zapisywanie korekt do bazy treningowej.
+            * **Wdrożenie Produkcyjne (Cross-Platform):**
+                * **Backend:** Python FastAPI (Logika biznesowa + AI).
+                * **Frontend Web:** React.js (Dla biura/PC).
+                * **Frontend Mobile:** PWA (Progressive Web App) - działa na iOS/Android bez AppStore.
+                * **Infrastruktura:** Kubernetes (Skalowalność).
+            * **Czas do rynku (MVP):** 3-4 miesiące.
+            """)
+        st.header("⭐ Wariant 1D: SolidRules FLOW")
+        st.success("✅ REKOMENDOWANA STRATEGIA")
+        st.markdown("**AI wykonuje 80% pracy, Człowiek 20% decyzji.**")
+
+    # --- 1E ---
     with tab1e:
-        st.header("Wariant 1E: SolidRules EVOLVE (Optymalizacja)")
-        st.info("ℹ️ **Status:** Cel na 2-3 lata")
-        st.markdown("**Filozofia:** System staje się Dyrektorem Operacyjnym. Dynamiczne ceny, przewidywanie odejścia klientów, samodoskonalenie algorytmów.")
+        with st.expander("ℹ️ TECH & DEPLOYMENT: Wariant 1E (Evolve)", expanded=False):
+            st.markdown("""
+            * **Zasada:** Optymalizacja biznesowa. Algorytmy predykcyjne.
+            * **Tech:** Reinforcement Learning (Uczenie ze wzmocnieniem), Big Data Analytics.
+            * **Wdrożenie:** +12 miesięcy od wdrożenia wersji 1D (wymaga dużej ilości danych historycznych).
+            """)
+        st.header("Wariant 1E: SolidRules EVOLVE")
+        st.info("Status: Cel długoterminowy")
